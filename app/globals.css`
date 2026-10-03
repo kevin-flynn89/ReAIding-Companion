@@ -1,0 +1,5 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body { background: #EEF1F6; color: #14213D; font-family: system-ui, sans-serif; }
+h1, h2 { font-family: Georgia, "Times New Roman", serif; }
