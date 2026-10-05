@@ -16,6 +16,11 @@ export default function Home() {
         Aggiungi opera da link
       </Link>
 
+      <div className="mt-3 flex gap-3">
+        <Link href="/aggiungi-file" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Aggiungi da file</Link>
+        <Link href="/libreria" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Libreria</Link>
+      </div>
+
       <section className="mt-8">
         <h2 className="text-xl font-bold">Prova lo Spoiler Shield</h2>
         <label className="mt-3 block text-sm" htmlFor="cap">
