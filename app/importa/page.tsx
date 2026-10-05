@@ -6,7 +6,7 @@ import { API_URL } from "@/lib/config";
 type Chapter = { number: number; title: string; url: string };
 type Result = {
   status: string; message?: string; title?: string; author?: string; description?: string;
-  cover?: string | null; domain?: string; chapterCount?: number; chapters?: Chapter[];
+  cover?: string | null; domain?: string; chapterCount?: number; chapters?: Chapter[]; debug?: string[];
 };
 
 export default function Importa() {
@@ -52,6 +52,9 @@ export default function Importa() {
           </div>
           {res.description && <p className="mt-3 text-sm">{res.description}</p>}
           <p className="mt-3 text-sm font-semibold">Capitoli trovati: {res.chapterCount}</p>
+          {res.chapterCount === 0 && res.debug && (
+            <p className="mt-2 text-xs">Nessun capitolo trovato. Indirizzi visti nella pagina: {res.debug.join(" , ")}</p>
+          )}
           <ul className="mt-2 max-h-48 overflow-auto text-sm">
             {res.chapters?.slice(0, 50).map((c) => <li key={c.url} className="py-1">Cap. {c.number}</li>)}
           </ul>
