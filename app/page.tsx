@@ -16,9 +16,10 @@ export default function Home() {
         Aggiungi opera da link
       </Link>
 
-      <div className="mt-3 flex gap-3">
+      <div className="mt-3 flex flex-wrap gap-3">
         <Link href="/aggiungi-file" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Aggiungi da file</Link>
         <Link href="/libreria" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Libreria</Link>
+        <Link href="/domande" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Domande</Link>
       </div>
 
       <section className="mt-8">
