@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { parseEpub, parseTxt, type Parsed } from "@/lib/parsers";
+import { parseEpub, parseMobi, type Parsed } from "@/lib/parsers";
 import { saveWork } from "@/lib/library";
 
 export default function AggiungiFile() {
@@ -16,11 +16,11 @@ export default function AggiungiFile() {
     try {
       const name = f.name.toLowerCase();
       if (name.endsWith(".epub")) setP(await parseEpub(f));
-      else if (name.endsWith(".txt")) setP(parseTxt(await f.text(), f.name));
-      else { setMsg("Per ora sono supportati EPUB e TXT. Il PDF arriva al prossimo passo."); return; }
+      else if (name.endsWith(".mobi") || name.endsWith(".azw3")) setP(await parseMobi(f));
+      else { setMsg("Formati supportati: EPUB e MOBI."); return; }
       setMsg("");
     } catch {
-      setMsg("Non sono riuscito a leggere questo file.");
+      setMsg("Non riesco a leggere questo file. Se arriva da un negozio potrebbe avere protezione DRM: in quel caso non posso aprirlo.");
     }
   }
 
@@ -34,8 +34,8 @@ export default function AggiungiFile() {
     <main>
       <Link href="/" className="text-sm text-segnalibro">Torna alla home</Link>
       <h1 className="mt-3 text-3xl font-bold">Aggiungi da file</h1>
-      <p className="mt-2 text-sm">Scegli un file EPUB o TXT. Resta sul tuo dispositivo.</p>
-      <input type="file" accept=".epub,.txt" onChange={(e) => onFile(e.target.files?.[0])} className="mt-4 block w-full text-sm" />
+      <p className="mt-2 text-sm">Scegli un file EPUB o MOBI. Resta sul tuo dispositivo.</p>
+      <input type="file" accept=".epub,.mobi,.azw3" onChange={(e) => onFile(e.target.files?.[0])} className="mt-4 block w-full text-sm" />
       {msg && <p className="mt-4 text-sm">{msg}</p>}
       {p && (
         <section className="mt-6 bg-white p-4">
