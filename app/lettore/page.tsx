@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { listWorks, setLastOpened, setProgress, type Work } from "@/lib/library";
 import { chunkWork } from "@/lib/rag";
-import { answer } from "@/lib/companion";
+import Conversazione from "../conversazione";
 
 export default function Lettore() {
   const [work, setWork] = useState<Work | null>(null);
@@ -11,10 +11,6 @@ export default function Lettore() {
   const [n, setN] = useState(1);
   const [size, setSize] = useState(18);
   const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
-  const [ans, setAns] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
@@ -31,21 +27,13 @@ export default function Lettore() {
 
   function go(next: number) {
     if (!work || next < 1 || next > work.chapters.length) return;
-    setN(next); setProgress(work.id, next); setAns(""); setErr("");
+    setN(next); setProgress(work.id, next);
     window.scrollTo(0, 0);
   }
   function resize(d: number) {
     const s = Math.min(30, Math.max(14, size + d)); setSize(s);
     try { localStorage.setItem("rc_font", String(s)); } catch { /* ignora */ }
   }
-  async function chiedi(question: string, spread = false) {
-    if (!work) return;
-    setBusy(true); setAns(""); setErr("");
-    try { setAns(await answer(work, chunks, n, question, spread)); }
-    catch (e: any) { setErr(e?.message || "Errore. Controlla che il backend sia collegato."); }
-    setBusy(false);
-  }
-
   if (state === "loading") return <main><p className="text-sm">Caricamento...</p></main>;
   if (state === "missing" || !work || !chapter) return (
     <main>
@@ -77,17 +65,8 @@ export default function Lettore() {
       <div className="fixed inset-x-0 bottom-0 border-t border-inchiostro/20 bg-carta">
         <div className="mx-auto max-w-md px-5 py-3">
           {open && (
-            <section className="mb-3 max-h-[55vh] overflow-auto rounded bg-white p-3 text-sm">
-              <p className="text-xs">Le risposte usano solo i capitoli fino al {n}.</p>
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Chiedi qualcosa sulla storia..."
-                className="mt-2 w-full rounded border border-inchiostro/30 p-2" />
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button onClick={() => chiedi(q)} disabled={!q || busy} className="rounded bg-segnalibro px-3 py-2 font-semibold text-white disabled:opacity-40">{busy ? "Sto pensando..." : "Chiedi"}</button>
-                <button onClick={() => chiedi("Riassumi quello che è successo fin qui.", true)} disabled={busy} className="rounded border border-segnalibro px-3 py-2 font-semibold text-segnalibro disabled:opacity-40">Riassumi fin qui</button>
-                <button onClick={() => chiedi("Cosa devo ricordare? Elenca personaggi, relazioni, eventi e misteri aperti.", true)} disabled={busy} className="rounded border border-segnalibro px-3 py-2 font-semibold text-segnalibro disabled:opacity-40">Cosa devo ricordare?</button>
-              </div>
-              {ans && <p className="mt-3 whitespace-pre-line border-l-4 border-segnalibro pl-3">{ans}</p>}
-              {err && <p className="mt-3 text-red-600">{err}</p>}
+            <section className="mb-3 max-h-[70vh] overflow-auto rounded bg-white p-3">
+              <Conversazione work={work} current={n} chunks={chunks} maxHeight="38vh" />
             </section>
           )}
           <div className="flex items-center gap-2">
