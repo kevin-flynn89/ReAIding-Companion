@@ -1,47 +1,74 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listWorks, removeWork, saveWork, type Work } from "@/lib/library";
+import { getLastOpened, listWorks, type Work } from "@/lib/library";
+import Cover from "./copertina";
+import { InstallButton } from "./pwa";
 
-export default function Libreria() {
-  const [works, setWorks] = useState<Work[]>([]);
-  const refresh = () => listWorks().then(setWorks);
-  useEffect(() => { refresh(); }, []);
+export default function Home() {
+  const [works, setWorks] = useState<Work[] | null>(null);
+  const [last, setLast] = useState<string | null>(null);
 
-  async function setCurrent(w: Work, n: number) { await saveWork({ ...w, current: n }); refresh(); }
-  async function elimina(w: Work) {
-    if (window.confirm(`Eliminare "${w.title}" dalla libreria?`)) { await removeWork(w.id); refresh(); }
-  }
+  useEffect(() => { listWorks().then(setWorks); getLastOpened().then(setLast); }, []);
+
+  const cont = works?.find((w) => w.id === last) ?? works?.[0];
+  const others = (works || []).filter((w) => w.id !== cont?.id).slice(0, 6);
 
   return (
     <main>
-      <Link href="/" className="text-sm text-segnalibro">Torna alla home</Link>
-      <h1 className="mt-3 text-3xl font-bold">Libreria</h1>
-      {works.length === 0 && <p className="mt-4 text-sm">Nessuna opera salvata. Aggiungine una da file.</p>}
-      <ul className="mt-4 space-y-4">
-        {works.map((w) => (
-          <li key={w.id} className="bg-white p-4">
-            <h2 className="text-lg font-bold">{w.title}</h2>
-            <p className="text-sm">{w.author || "Autore non indicato"} · {w.chapters.length} capitoli</p>
-            <p className="mt-2 text-xs">Sei al capitolo {w.current} di {w.chapters.length}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <Link href={`/lettore?id=${w.id}`} className="rounded bg-segnalibro px-4 py-2 text-sm font-semibold text-white">
-                {w.current > 1 ? "Continua a leggere" : "Inizia a leggere"}
-              </Link>
-              <label className="text-xs">Vai al capitolo
-                <select value={w.current} onChange={(e) => setCurrent(w, Number(e.target.value))} className="ml-2 border p-1">
-                  {w.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
-                </select>
-              </label>
+      <h1 className="text-3xl font-bold">AI Reading Companion</h1>
+      <p className="mt-2 text-sm">Leggi, e chiedi all'AI: userà solo ciò che hai già letto.</p>
+
+      {works === null && <p className="mt-6 text-sm">Caricamento...</p>}
+
+      {works !== null && !cont && (
+        <section className="mt-6 bg-white p-5">
+          <h2 className="text-lg font-bold">Inizia da qui</h2>
+          <p className="mt-2 text-sm">Aggiungi il tuo primo libro (EPUB o MOBI senza protezione DRM). Resta sul tuo dispositivo.</p>
+          <Link href="/aggiungi-file" className="mt-4 inline-block rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white">Aggiungi un libro</Link>
+        </section>
+      )}
+
+      {cont && (
+        <section className="mt-6 bg-white p-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide">Continua a leggere</h2>
+          <div className="mt-3 flex gap-4">
+            <Cover work={cont} className="h-36 w-24 shrink-0 rounded" />
+            <div className="min-w-0">
+              <p className="text-lg font-bold leading-snug">{cont.title}</p>
+              <p className="text-xs">{cont.author || "Autore non indicato"}</p>
+              <p className="mt-3 text-xs">Capitolo {cont.current} di {cont.chapters.length}</p>
+              <div className="mt-1 h-2 w-full rounded bg-carta" role="progressbar" aria-valuenow={cont.current} aria-valuemin={1} aria-valuemax={cont.chapters.length}>
+                <div className="h-2 rounded bg-segnalibro" style={{ width: `${Math.round((cont.current / cont.chapters.length) * 100)}%` }} />
+              </div>
+              <Link href={`/lettore?id=${cont.id}`} className="mt-4 inline-block rounded bg-segnalibro px-4 py-2 text-sm font-semibold text-white">Continua</Link>
             </div>
-            <p className="mt-2 text-xs">
-              Spoiler Shield: l'AI può usare {w.chapters.filter((c) => c.n <= w.current).length} capitoli
-              e ne tiene nascosti {w.chapters.filter((c) => c.n > w.current).length}.
-            </p>
-            <button onClick={() => elimina(w)} className="mt-3 text-xs text-red-600">Elimina</button>
-          </li>
-        ))}
-      </ul>
+          </div>
+        </section>
+      )}
+
+      {others.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide">Altri libri</h2>
+          <ul className="mt-3 flex gap-3 overflow-x-auto pb-2">
+            {others.map((w) => (
+              <li key={w.id} className="w-24 shrink-0">
+                <Link href={`/lettore?id=${w.id}`}>
+                  <Cover work={w} className="h-36 w-24 rounded" />
+                  <p className="mt-1 line-clamp-2 text-xs">{w.title}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link href="/aggiungi-file" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Aggiungi un libro</Link>
+        <Link href="/libreria" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Libreria</Link>
+        <Link href="/domande" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Prova le domande</Link>
+      </div>
+      <InstallButton />
     </main>
   );
 }
