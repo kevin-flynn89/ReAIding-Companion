@@ -1,10 +1,11 @@
 import { get, set } from "idb-keyval";
 import { listWorks, saveWork, setProgress, type Work } from "./library";
 import { loadChat, saveChat, type Msg } from "./chat";
+import { loadMem, saveMem, type MemStore } from "./memory";
 
-// Formato file: un unico .json con libri, progressi e conversazioni.
+// Formato file: un unico .json con libri, progressi, conversazioni e memoria narrativa.
 // L'indice "ricerca avanzata" NON è incluso (è pesante e si rigenera da solo).
-type BackupBook = { work: Work; chat: Msg[] };
+type BackupBook = { work: Work; chat: Msg[]; mem?: MemStore };
 type BackupHead = { app: "ai-reading-companion"; version: 1; exportedAt: number; count: number };
 
 export function backupName() {
@@ -18,7 +19,7 @@ export async function makeBackup(ids: string[]): Promise<Blob> {
   const head: BackupHead = { app: "ai-reading-companion", version: 1, exportedAt: Date.now(), count: works.length };
   const parts: string[] = [`{"head":${JSON.stringify(head)},"books":[`];
   for (let i = 0; i < works.length; i++) {
-    const book: BackupBook = { work: works[i], chat: await loadChat(works[i].id) };
+    const book: BackupBook = { work: works[i], chat: await loadChat(works[i].id), mem: await loadMem(works[i].id) };
     parts.push((i ? "," : "") + JSON.stringify(book)); // un libro alla volta: meno memoria
   }
   parts.push("]}");
@@ -52,10 +53,12 @@ export async function importBackup(file: File): Promise<ImportResult> {
       const seen = new Set(mine.map((m) => `${m.ts}|${m.role}`));
       const extra = (Array.isArray(b.chat) ? b.chat : []).filter((m) => m && !seen.has(`${m.ts}|${m.role}`));
       if (extra.length) await saveChat(w.id, [...mine, ...extra].sort((a, z) => a.ts - z.ts));
+      if (b.mem && typeof b.mem === "object") await saveMem(w.id, { ...b.mem, ...(await loadMem(w.id)) });
       res.updated++;
     } else {
       await saveWork(w);
       if (Array.isArray(b.chat) && b.chat.length) await saveChat(w.id, b.chat);
+      if (b.mem && typeof b.mem === "object" && Object.keys(b.mem).length) await saveMem(w.id, b.mem);
       res.added++;
     }
   }
