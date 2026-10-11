@@ -1,48 +1,47 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { applySpoilerShield, demoChunks } from "@/lib/spoiler";
+import { listWorks, removeWork, saveWork, type Work } from "@/lib/library";
 
-export default function Home() {
-  const [chapter, setChapter] = useState(3);
-  const visibili = applySpoilerShield(demoChunks, chapter);
+export default function Libreria() {
+  const [works, setWorks] = useState<Work[]>([]);
+  const refresh = () => listWorks().then(setWorks);
+  useEffect(() => { refresh(); }, []);
+
+  async function setCurrent(w: Work, n: number) { await saveWork({ ...w, current: n }); refresh(); }
+  async function elimina(w: Work) {
+    if (window.confirm(`Eliminare "${w.title}" dalla libreria?`)) { await removeWork(w.id); refresh(); }
+  }
 
   return (
     <main>
-      <h1 className="text-3xl font-bold">AI Reading Companion</h1>
-      <p className="mt-2 text-sm">Dimmi dove sei arrivato: l'AI userà solo ciò che hai già letto.</p>
-
-      <Link href="/importa" className="mt-5 inline-block rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white">
-        Aggiungi opera da link
-      </Link>
-
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Link href="/aggiungi-file" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Aggiungi da file</Link>
-        <Link href="/libreria" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Libreria</Link>
-        <Link href="/domande" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Domande</Link>
-      </div>
-
-      <section className="mt-8">
-        <h2 className="text-xl font-bold">Prova lo Spoiler Shield</h2>
-        <label className="mt-3 block text-sm" htmlFor="cap">
-          Capitolo corrente: <strong>{chapter}</strong>
-        </label>
-        <input
-          id="cap" type="range" min={1} max={10} value={chapter}
-          onChange={(e) => setChapter(Number(e.target.value))}
-          className="mt-2 w-full accent-segnalibro"
-        />
-        <ul className="mt-4 space-y-2">
-          {visibili.map((c) => (
-            <li key={c.id} className="border-l-4 border-segnalibro bg-white p-3 text-sm">
-              <span className="font-semibold">Cap. {c.chapter}:</span> {c.text}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs">
-          {demoChunks.length - visibili.length} contenuti nascosti perché appartengono a capitoli successivi.
-        </p>
-      </section>
+      <Link href="/" className="text-sm text-segnalibro">Torna alla home</Link>
+      <h1 className="mt-3 text-3xl font-bold">Libreria</h1>
+      {works.length === 0 && <p className="mt-4 text-sm">Nessuna opera salvata. Aggiungine una da file.</p>}
+      <ul className="mt-4 space-y-4">
+        {works.map((w) => (
+          <li key={w.id} className="bg-white p-4">
+            <h2 className="text-lg font-bold">{w.title}</h2>
+            <p className="text-sm">{w.author || "Autore non indicato"} · {w.chapters.length} capitoli</p>
+            <p className="mt-2 text-xs">Sei al capitolo {w.current} di {w.chapters.length}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Link href={`/lettore?id=${w.id}`} className="rounded bg-segnalibro px-4 py-2 text-sm font-semibold text-white">
+                {w.current > 1 ? "Continua a leggere" : "Inizia a leggere"}
+              </Link>
+              <label className="text-xs">Vai al capitolo
+                <select value={w.current} onChange={(e) => setCurrent(w, Number(e.target.value))} className="ml-2 border p-1">
+                  {w.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="mt-2 text-xs">
+              Spoiler Shield: l'AI può usare {w.chapters.filter((c) => c.n <= w.current).length} capitoli
+              e ne tiene nascosti {w.chapters.filter((c) => c.n > w.current).length}.
+            </p>
+            <button onClick={() => elimina(w)} className="mt-3 text-xs text-red-600">Elimina</button>
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }
