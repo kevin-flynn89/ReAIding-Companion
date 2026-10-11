@@ -2,7 +2,7 @@ import JSZip from "jszip";
 import { initMobiFile, initKf8File } from "@lingo-reader/mobi-parser";
 import type { Chapter } from "./library";
 
-export type Parsed = { title: string; author: string; chapters: Chapter[] };
+export type Parsed = { title: string; author: string; cover?: string; chapters: Chapter[] };
 
 const clean = (s: string) => s.replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/\n[ \t]+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 
@@ -32,6 +32,33 @@ function finalize(items: { text: string; head?: string }[]): Chapter[] {
   return splitText(kept.map((x) => x.text).join("\n\n"));
 }
 
+// Riduce la copertina (circa 240 px di larghezza) per occupare poco spazio
+async function shrink(blob: Blob, w = 240): Promise<string | undefined> {
+  const bmp = await createImageBitmap(blob);
+  const h = Math.round((bmp.height * w) / bmp.width);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
+  return c.toDataURL("image/jpeg", 0.8);
+}
+
+async function epubCover(zip: JSZip, opf: Document, base: string): Promise<string | undefined> {
+  try {
+    const items = Array.from(opf.getElementsByTagName("item"));
+    let item = items.find((i) => (i.getAttribute("properties") || "").split(" ").includes("cover-image"));
+    if (!item) {
+      const meta = Array.from(opf.getElementsByTagName("meta")).find((m) => m.getAttribute("name") === "cover");
+      const id = meta?.getAttribute("content");
+      item = items.find((i) => i.getAttribute("id") === id);
+    }
+    const href = item?.getAttribute("href");
+    if (!item || !href) return undefined;
+    const f = zip.file(base + decodeURIComponent(href));
+    if (!f) return undefined;
+    const blob = new Blob([await f.async("uint8array")], { type: item.getAttribute("media-type") || "image/jpeg" });
+    return await shrink(blob);
+  } catch { return undefined; }
+}
+
 export async function parseEpub(file: File): Promise<Parsed> {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const read = async (p: string) => (await zip.file(p)?.async("string")) || "";
@@ -51,7 +78,7 @@ export async function parseEpub(file: File): Promise<Parsed> {
     const href = manifest[ref.getAttribute("idref") || ""];
     if (href) items.push(htmlToText(await read(base + decodeURIComponent(href))));
   }
-  return { title, author, chapters: finalize(items) };
+  return { title, author, cover: await epubCover(zip, opf, base), chapters: finalize(items) };
 }
 
 // MOBI / AZW3 (senza DRM). I file protetti da DRM non vengono letti: non aggiro le protezioni.
