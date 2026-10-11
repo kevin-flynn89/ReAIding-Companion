@@ -47,17 +47,18 @@ export function applyShield(chunks: Chunk[], currentChapter: number): Chunk[] {
   return chunks.filter((c) => c.chapter <= currentChapter);
 }
 
-// Ricerca BM25 eseguita SOLO sui frammenti già filtrati (anche le statistiche escludono i capitoli nascosti)
-export function search(chunks: Chunk[], query: string, currentChapter: number, k = 5) {
-  const visible = applyShield(chunks, currentChapter);
+export type EmbIndex = { ids: string[]; dim: number; data: Float32Array };
+
+// Punteggi BM25 calcolati solo sui frammenti già filtrati
+function bm25(visible: Chunk[], query: string): Map<string, number> {
   const q = [...new Set(tokenize(query))];
   const docs = visible.map((c) => tokenize(c.text));
   const N = docs.length || 1;
   const avg = docs.reduce((s, d) => s + d.length, 0) / N || 1;
   const df = new Map<string, number>();
   for (const d of docs) for (const t of new Set(d)) df.set(t, (df.get(t) || 0) + 1);
-  const k1 = 1.4, b = 0.75;
-  const hits: Hit[] = visible.map((c, i) => {
+  const k1 = 1.4, b = 0.75, out = new Map<string, number>();
+  visible.forEach((c, i) => {
     const tf = new Map<string, number>();
     docs[i].forEach((t) => tf.set(t, (tf.get(t) || 0) + 1));
     let score = 0;
@@ -66,7 +67,34 @@ export function search(chunks: Chunk[], query: string, currentChapter: number, k
       const n = df.get(t) || 0;
       score += Math.log(1 + (N - n + 0.5) / (n + 0.5)) * (f * (k1 + 1)) / (f + k1 * (1 - b + b * docs[i].length / avg));
     }
-    return { ...c, score };
-  }).filter((h) => h.score > 0).sort((a, b2) => b2.score - a.score).slice(0, k);
+    if (score > 0) out.set(c.id, score);
+  });
+  return out;
+}
+
+// Ricerca per parole (BM25)
+export function search(chunks: Chunk[], query: string, currentChapter: number, k = 5) {
+  const visible = applyShield(chunks, currentChapter);
+  const sc = bm25(visible, query);
+  const hits: Hit[] = visible.filter((c) => sc.has(c.id)).map((c) => ({ ...c, score: sc.get(c.id)! }))
+    .sort((a, b) => b.score - a.score).slice(0, k);
+  return { hits, visible: visible.length, hidden: chunks.length - visible.length };
+}
+
+// Ricerca avanzata: unisce parole (BM25) e significato (embeddings). Il filtro dello Shield viene PRIMA di tutto.
+export function searchHybrid(chunks: Chunk[], query: string, currentChapter: number, qvec: Float32Array, index: EmbIndex, k = 5) {
+  const visible = applyShield(chunks, currentChapter);
+  const row = new Map(index.ids.map((id, i) => [id, i]));
+  const lex = bm25(visible, query);
+  const sem = visible.map((c) => {
+    const r = row.get(c.id); let dot = 0;
+    if (r !== undefined) for (let d = 0; d < index.dim; d++) dot += index.data[r * index.dim + d] * qvec[d];
+    return { id: c.id, dot };
+  }).sort((a, b) => b.dot - a.dot);
+  const fused = new Map<string, number>();
+  [...lex.entries()].sort((a, b) => b[1] - a[1]).forEach(([id], r) => fused.set(id, (fused.get(id) || 0) + 1 / (60 + r)));
+  sem.slice(0, 30).forEach(({ id }, r) => fused.set(id, (fused.get(id) || 0) + 1 / (60 + r)));
+  const byId = new Map(visible.map((c) => [c.id, c]));
+  const hits: Hit[] = [...fused.entries()].sort((a, b) => b[1] - a[1]).slice(0, k).map(([id, s]) => ({ ...byId.get(id)!, score: s * 100 }));
   return { hits, visible: visible.length, hidden: chunks.length - visible.length };
 }
