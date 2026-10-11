@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { listWorks, type Work } from "@/lib/library";
-import { chunkWork, search, searchHybrid, type EmbIndex } from "@/lib/rag";
+import { applyShield, chunkWork, search, searchHybrid, type EmbIndex } from "@/lib/rag";
 import { buildIndex, embedQuery, getIndex } from "@/lib/embed";
 
 export default function Domande() {
@@ -10,11 +10,12 @@ export default function Domande() {
   const [id, setId] = useState("");
   const [current, setCurrent] = useState(1);
   const [q, setQ] = useState("");
-  const [ask, setAsk] = useState("");
   const [idx, setIdx] = useState<EmbIndex | null>(null);
   const [status, setStatus] = useState("");
+  const [running, setRunning] = useState(false);
   const [res, setRes] = useState<ReturnType<typeof search> | null>(null);
   const [mode, setMode] = useState("");
+  const stop = useRef(false);
 
   useEffect(() => {
     listWorks().then((w) => { setWorks(w); if (w[0]) { setId(w[0].id); setCurrent(w[0].current); } });
@@ -22,18 +23,21 @@ export default function Domande() {
 
   const work = works.find((w) => w.id === id);
   const chunks = useMemo(() => (work ? chunkWork(work) : []), [work]);
+  const wanted = useMemo(() => applyShield(chunks, current), [chunks, current]); // solo fino al tuo capitolo
+  const missing = useMemo(() => { const have = new Set(idx?.ids || []); return wanted.filter((c) => !have.has(c.id)).length; }, [wanted, idx]);
 
-  useEffect(() => { setIdx(null); setRes(null); if (work) getIndex(work.id, chunks.length).then(setIdx); }, [work, chunks.length]);
+  useEffect(() => { setIdx(null); setRes(null); if (work) getIndex(work.id).then(setIdx); }, [work]);
 
   async function prepara() {
     if (!work) return;
-    try { setIdx(await buildIndex(work.id, chunks, setStatus)); setStatus("Ricerca avanzata pronta."); }
+    stop.current = false; setRunning(true);
+    try { setIdx(await buildIndex(work.id, wanted, idx, setStatus, () => stop.current)); setStatus(stop.current ? "Interrotto: i progressi sono salvati." : "Ricerca avanzata pronta."); }
     catch { setStatus("Non sono riuscito a preparare la ricerca avanzata: uso quella semplice."); }
+    setRunning(false);
   }
 
   async function cerca() {
-    setAsk(q);
-    if (idx) {
+    if (idx && idx.ids.length > 0) {
       try {
         const qv = await embedQuery(q, setStatus);
         setRes(searchHybrid(chunks, q, current, qv, idx)); setMode("avanzata"); return;
@@ -59,19 +63,24 @@ export default function Domande() {
               {work.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
             </select>
           </label>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Es. Perché Marco ha litigato con Luca?"
-            className="mt-4 w-full rounded border border-inchiostro/30 bg-white p-3 text-sm" />
-          <button onClick={cerca} disabled={!q}
-            className="mt-3 rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">Cerca passaggi</button>
+
           <div className="mt-4 text-sm">
-            {idx ? <p>Ricerca avanzata attiva per questa opera.</p> : (
-              <button onClick={prepara} className="rounded border border-segnalibro px-4 py-2 font-semibold text-segnalibro">
-                Prepara ricerca avanzata
-              </button>
+            {missing === 0 && idx ? <p>Ricerca avanzata pronta fino al capitolo {current}.</p> : (
+              <div className="flex gap-3">
+                <button onClick={prepara} disabled={running} className="rounded border border-segnalibro px-4 py-2 font-semibold text-segnalibro disabled:opacity-40">
+                  {running ? "Analisi in corso..." : `Prepara ricerca avanzata (${missing} frammenti)`}
+                </button>
+                {running && <button onClick={() => (stop.current = true)} className="px-3 py-2 text-red-600">Interrompi</button>}
+              </div>
             )}
-            {!idx && <p className="mt-1 text-xs">La prima volta scarica un modello (circa 120 MB) e analizza il libro sul tuo dispositivo: può richiedere alcuni minuti. Fallo con il Wi-Fi.</p>}
+            <p className="mt-1 text-xs">Analizza solo fino al capitolo {current}, sul tuo dispositivo. Puoi interrompere e riprendere: i progressi restano salvati. Tieni lo schermo acceso e la pagina aperta.</p>
             {status && <p className="mt-1 text-xs">{status}</p>}
           </div>
+
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Es. Perché Marco ha litigato con Luca?"
+            className="mt-4 w-full rounded border border-inchiostro/30 bg-white p-3 text-sm" />
+          <button onClick={cerca} disabled={!q || running}
+            className="mt-3 rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">Cerca passaggi</button>
           {res && (
             <section className="mt-5">
               <p className="text-xs">Ricerca {mode} · frammenti consultabili: {res.visible} · nascosti dallo Spoiler Shield: {res.hidden}</p>
