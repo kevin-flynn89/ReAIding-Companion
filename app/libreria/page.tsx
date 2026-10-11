@@ -33,6 +33,7 @@ export default function Libreria() {
                   {w.current > 1 ? "Continua" : "Inizia"}
                 </Link>
                 <Link href={`/chat?id=${w.id}`} className="rounded border border-segnalibro px-3 py-2 text-sm font-semibold text-segnalibro">Chiedi all'AI</Link>
+                <Link href={`/memoria?id=${w.id}`} className="rounded border border-segnalibro px-3 py-2 text-sm font-semibold text-segnalibro">Memoria</Link>
                 <label className="text-xs">Vai al cap.
                   <select value={w.current} onChange={(e) => setCurrent(w, Number(e.target.value))} className="ml-1 border p-1">
                     {w.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
