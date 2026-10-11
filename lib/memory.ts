@@ -127,3 +127,27 @@ export function buildCard(mem: MemStore, current: number): Card {
     analizzati: vis.length,
   };
 }
+
+// --- Appunti della scheda da dare all'AI insieme ai passaggi (sempre solo capitoli <= current) ---
+export type Note = { chapter: number; text: string };
+
+export function notesFor(mem: MemStore, current: number, query: string, spread: boolean): Note[] {
+  const card = buildCard(mem, current); // già filtrata dallo Spoiler Shield
+  const q = " " + norm(query) + " ";
+  const notes: Note[] = [];
+  const add = (it: Item, tipo: string) => {
+    for (const n of it.note.slice(-3)) if (n.n <= current) notes.push({ chapter: n.n, text: `${it.nome} (${tipo}): ${n.testo}`.slice(0, 280) });
+  };
+  const mentioned = (it: Item) => norm(it.nome).split(" ").some((w) => w.length >= 3 && q.includes(" " + w + " "));
+  for (const it of card.personaggi) if (mentioned(it)) add(it, "personaggio");
+  for (const it of card.luoghi) if (mentioned(it)) add(it, "luogo");
+  for (const it of card.oggetti) if (mentioned(it)) add(it, "oggetto");
+  if (spread) {
+    card.personaggi.slice(0, 6).forEach((it) => add(it, "personaggio"));
+    card.misteri.slice(-5).forEach((m) => notes.push({ chapter: m.n, text: `Domanda aperta: ${m.testo}`.slice(0, 280) }));
+  } else if (/mister|segret|domande? apert|irrisolt/.test(q)) {
+    card.misteri.slice(-5).forEach((m) => notes.push({ chapter: m.n, text: `Domanda aperta: ${m.testo}`.slice(0, 280) }));
+  }
+  const seen = new Set<string>();
+  return notes.filter((n) => n.chapter <= current && !seen.has(n.text) && seen.add(n.text)).slice(0, 16);
+}
