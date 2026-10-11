@@ -33,5 +33,6 @@ export async function removeWork(id: string) {
   await set(KEY, (((await get(KEY)) as Work[]) || []).filter((x) => x.id !== id));
   const p = await progress(); delete p[id]; await set(PROG, p);
   await del(`emb_${id}`);
+  await del(`chat_${id}`);
 }
 export async function clearAll() { await del(KEY); await del(PROG); await del(LAST); }
