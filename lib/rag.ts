@@ -10,7 +10,7 @@ const STOP = new Set(("il lo la i gli le un uno una di a da in con su per tra fr
 
 // Normalizza accenti, toglie parole comuni, accorcia le parole lunghe (litigato/litigio -> litig)
 export function tokenize(s: string): string[] {
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/)
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/)
     .filter((w) => w.length > 1 && !STOP.has(w))
     .map((w) => (w.length > 5 ? w.slice(0, 5) : w));
 }
@@ -82,13 +82,14 @@ export function search(chunks: Chunk[], query: string, currentChapter: number, k
 }
 
 // Ricerca avanzata: unisce parole (BM25) e significato (embeddings). Il filtro dello Shield viene PRIMA di tutto.
+// Funziona anche con un indice parziale: i frammenti non ancora analizzati restano trovabili per parole.
 export function searchHybrid(chunks: Chunk[], query: string, currentChapter: number, qvec: Float32Array, index: EmbIndex, k = 5) {
   const visible = applyShield(chunks, currentChapter);
   const row = new Map(index.ids.map((id, i) => [id, i]));
   const lex = bm25(visible, query);
-  const sem = visible.map((c) => {
-    const r = row.get(c.id); let dot = 0;
-    if (r !== undefined) for (let d = 0; d < index.dim; d++) dot += index.data[r * index.dim + d] * qvec[d];
+  const sem = visible.filter((c) => row.has(c.id)).map((c) => {
+    const r = row.get(c.id)!; let dot = 0;
+    for (let d = 0; d < index.dim; d++) dot += index.data[r * index.dim + d] * qvec[d];
     return { id: c.id, dot };
   }).sort((a, b) => b.dot - a.dot);
   const fused = new Map<string, number>();
