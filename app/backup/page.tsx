@@ -13,31 +13,41 @@ export default function Backup() {
 
   useEffect(() => { listWorks().then((w) => { setWorks(w); setSel(w.map((x) => x.id)); }); }, []);
 
-  const toggle = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const toggle = (id: string) => { setPronto(null); setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); };
 
-  async function esporta(condividi: boolean) {
-    setBusy(true); setMsg(null);
+  const [pronto, setPronto] = useState<File | null>(null);
+
+  function scarica(file: File) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    setMsg({ ok: true, text: `File "${file.name}" scaricato nella cartella Download.` });
+  }
+
+  // Passo 1: preparo il file (può richiedere qualche secondo)
+  async function prepara() {
+    setBusy(true); setMsg(null); setPronto(null);
     try {
       const blob = await makeBackup(sel);
-      const file = new File([blob], backupName(), { type: "application/json" });
-      const nav = navigator as Navigator & { canShare?: (d: any) => boolean };
-      if (condividi && nav.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file], title: "Backup AI Reading Companion" });
-          setMsg({ ok: true, text: "Backup condiviso. Salvalo in un posto sicuro (es. Drive)." });
-        } catch (e: any) {
-          if (e?.name !== "AbortError") throw e; // annullato dall'utente: nessun errore
-        }
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-        setMsg({ ok: true, text: `File "${file.name}" scaricato nella cartella Download.` });
-      }
+      setPronto(new File([blob], backupName(), { type: "application/json" }));
     } catch (e: any) {
       setMsg({ ok: false, text: e?.message || "Non sono riuscito a creare il backup." });
     } finally { setBusy(false); }
+  }
+
+  // Passo 2: la condivisione parte SUBITO dal tocco (il browser lo richiede)
+  async function condividi() {
+    if (!pronto) return;
+    const nav = navigator as Navigator & { canShare?: (d: any) => boolean };
+    if (!nav.share || !nav.canShare?.({ files: [pronto] })) { scarica(pronto); return; }
+    try {
+      await navigator.share({ files: [pronto], title: "Backup AI Reading Companion" });
+      setMsg({ ok: true, text: "Backup condiviso. Salvalo in un posto sicuro (es. Drive)." });
+    } catch (e: any) {
+      if (e?.name === "AbortError") return; // annullato dall'utente
+      scarica(pronto); // la condivisione non è disponibile: scarico il file
+    }
   }
 
   async function importa(f: File | undefined) {
@@ -85,12 +95,18 @@ export default function Backup() {
               ))}
             </ul>
             <div className="mt-4 space-y-3">
-              <button disabled={busy || sel.length === 0} onClick={() => esporta(true)} className={`${btn} bg-segnalibro text-white`}>
-                {busy ? "Attendi..." : "Condividi / salva backup"}
-              </button>
-              <button disabled={busy || sel.length === 0} onClick={() => esporta(false)} className={`${btn} border border-segnalibro text-segnalibro`}>
-                Scarica come file
-              </button>
+              {!pronto ? (
+                <button disabled={busy || sel.length === 0} onClick={prepara} className={`${btn} bg-segnalibro text-white`}>
+                  {busy ? "Preparo il file..." : "Prepara il backup"}
+                </button>
+              ) : (
+                <>
+                  <p className="text-sm">Backup pronto: <strong>{pronto.name}</strong> ({(pronto.size / 1048576).toFixed(1)} MB)</p>
+                  <button onClick={condividi} className={`${btn} bg-segnalibro text-white`}>Condividi / salva (Drive, WhatsApp...)</button>
+                  <button onClick={() => scarica(pronto)} className={`${btn} border border-segnalibro text-segnalibro`}>Scarica come file</button>
+                  <button onClick={() => setPronto(null)} className="w-full py-2 text-sm text-segnalibro">Cambia selezione</button>
+                </>
+              )}
             </div>
             <p className="mt-3 text-xs">Nel menu di condivisione scegli Drive, WhatsApp, Telegram, email... Non include l'indice della "ricerca avanzata": si rigenera da solo.</p>
           </>
