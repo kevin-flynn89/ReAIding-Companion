@@ -46,6 +46,7 @@ export default function Lettore() {
     <main className="pb-44">
       <div className="flex items-center justify-between text-sm">
         <Link href="/libreria" className="text-segnalibro">Libreria</Link>
+        <Link href={`/memoria?id=${work.id}`} className="text-segnalibro">Memoria</Link>
         <div className="flex gap-2">
           <button onClick={() => resize(-2)} aria-label="Testo più piccolo" className="rounded border border-segnalibro px-3 py-1 text-segnalibro">A-</button>
           <button onClick={() => resize(2)} aria-label="Testo più grande" className="rounded border border-segnalibro px-3 py-1 text-segnalibro">A+</button>
