@@ -4,6 +4,7 @@ import Link from "next/link";
 import { listWorks, type Work } from "@/lib/library";
 import { applyShield, chunkWork, search, searchHybrid, type EmbIndex } from "@/lib/rag";
 import { buildIndex, embedQuery, getIndex } from "@/lib/embed";
+import { askAI, sampleSpread } from "@/lib/ask";
 
 export default function Domande() {
   const [works, setWorks] = useState<Work[]>([]);
@@ -15,6 +16,8 @@ export default function Domande() {
   const [running, setRunning] = useState(false);
   const [res, setRes] = useState<ReturnType<typeof search> | null>(null);
   const [mode, setMode] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [thinking, setThinking] = useState(false);
   const stop = useRef(false);
 
   useEffect(() => {
@@ -36,14 +39,38 @@ export default function Domande() {
     setRunning(false);
   }
 
-  async function cerca() {
+  async function retrieve(query: string) {
     if (idx && idx.ids.length > 0) {
       try {
-        const qv = await embedQuery(q, setStatus);
-        setRes(searchHybrid(chunks, q, current, qv, idx)); setMode("avanzata"); return;
+        const qv = await embedQuery(query, setStatus);
+        return { r: searchHybrid(chunks, query, current, qv, idx, 8), m: "avanzata" };
       } catch { /* ripiega sulla ricerca semplice */ }
     }
-    setRes(search(chunks, q, current)); setMode("semplice");
+    return { r: search(chunks, query, current, 8), m: "semplice" };
+  }
+
+  async function chiedi(question: string, spread = false) {
+    if (!work) return;
+    setThinking(true); setAnswer(""); setRes(null); setStatus("");
+    try {
+      let hits: { chapter: number; text: string; id: string; score: number }[] = [];
+      if (spread) {
+        const sp = sampleSpread(chunks, current);
+        hits = sp.map((c) => ({ ...c, score: 0 }));
+        setRes({ hits, visible: wanted.length, hidden: chunks.length - wanted.length }); setMode("distribuita");
+      } else {
+        const { r, m } = await retrieve(question);
+        hits = r.hits; setRes(r); setMode(m);
+      }
+      if (hits.length === 0) {
+        setAnswer("Fino al punto in cui sei arrivato non ho trovato nulla su questo: potrebbe non essere ancora stato spiegato.");
+      } else {
+        setAnswer(await askAI(work.title, current, question, hits));
+      }
+    } catch (e: any) {
+      setStatus(e?.message || "Errore. Controlla che il backend sia collegato.");
+    }
+    setThinking(false);
   }
 
   return (
@@ -79,11 +106,24 @@ export default function Domande() {
 
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Es. Perché Marco ha litigato con Luca?"
             className="mt-4 w-full rounded border border-inchiostro/30 bg-white p-3 text-sm" />
-          <button onClick={cerca} disabled={!q || running}
-            className="mt-3 rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">Cerca passaggi</button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button onClick={() => chiedi(q)} disabled={!q || running || thinking}
+              className="rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">{thinking ? "Sto pensando..." : "Chiedi"}</button>
+            <button onClick={() => chiedi("Riassumi quello che è successo fin qui.", true)} disabled={running || thinking}
+              className="rounded border border-segnalibro px-4 py-3 text-sm font-semibold text-segnalibro disabled:opacity-40">Riassumi fin qui</button>
+            <button onClick={() => chiedi("Cosa devo ricordare? Elenca personaggi, relazioni, eventi e misteri aperti.", true)} disabled={running || thinking}
+              className="rounded border border-segnalibro px-4 py-3 text-sm font-semibold text-segnalibro disabled:opacity-40">Cosa devo ricordare?</button>
+          </div>
+          {answer && (
+            <section className="mt-5 border-l-4 border-segnalibro bg-white p-4">
+              <h2 className="text-lg font-bold">Risposta (fino al capitolo {current})</h2>
+              <p className="mt-2 whitespace-pre-line text-sm">{answer}</p>
+            </section>
+          )}
           {res && (
-            <section className="mt-5">
-              <p className="text-xs">Ricerca {mode} · frammenti consultabili: {res.visible} · nascosti dallo Spoiler Shield: {res.hidden}</p>
+            <details className="mt-5">
+              <summary className="cursor-pointer text-sm font-semibold">Passaggi usati per la risposta ({res.hits.length})</summary>
+              <p className="mt-2 text-xs">Ricerca {mode} · frammenti consultabili: {res.visible} · nascosti dallo Spoiler Shield: {res.hidden}</p>
               {res.hits.length === 0 && <p className="mt-3 border-l-4 border-segnalibro bg-white p-3 text-sm">
                 Nessun passaggio trovato fino al capitolo {current}: l'AI risponderebbe che questo non è ancora stato spiegato.</p>}
               <ul className="mt-3 space-y-3">
@@ -94,7 +134,7 @@ export default function Domande() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </details>
           )}
         </>
       )}
