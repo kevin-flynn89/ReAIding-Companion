@@ -13,17 +13,19 @@ export function sampleSpread(chunks: Chunk[], current: number, max = 12): Chunk[
 }
 
 export async function askAI(
-  title: string, current: number, question: string, passages: Passage[], history: HistoryItem[] = [],
+  title: string, current: number, question: string, passages: Passage[], history: HistoryItem[] = [], notes: { chapter: number; text: string }[] = [],
 ): Promise<string> {
   // Barriere lato app: niente passaggi né cronologia oltre il capitolo corrente
   const safe = passages.filter((p) => p.chapter <= current).sort((a, b) => a.chapter - b.chapter);
   const hist = history.filter((m) => m.chapter <= current).slice(-6);
+  const safeNotes = notes.filter((n) => n.chapter <= current).slice(0, 16);
   const r = await fetch(`${API_URL}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       title, chapter: current, question,
       passages: safe.map((p) => ({ chapter: p.chapter, text: p.text.slice(0, 1200) })),
+      notes: safeNotes,
       history: hist.map((m) => ({ role: m.role, content: m.content.slice(0, 900), chapter: m.chapter })),
     }),
   });
