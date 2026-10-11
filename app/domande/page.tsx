@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { listWorks, type Work } from "@/lib/library";
-import { chunkWork, search } from "@/lib/rag";
+import { chunkWork, search, searchHybrid, type EmbIndex } from "@/lib/rag";
+import { buildIndex, embedQuery, getIndex } from "@/lib/embed";
 
 export default function Domande() {
   const [works, setWorks] = useState<Work[]>([]);
@@ -10,6 +11,10 @@ export default function Domande() {
   const [current, setCurrent] = useState(1);
   const [q, setQ] = useState("");
   const [ask, setAsk] = useState("");
+  const [idx, setIdx] = useState<EmbIndex | null>(null);
+  const [status, setStatus] = useState("");
+  const [res, setRes] = useState<ReturnType<typeof search> | null>(null);
+  const [mode, setMode] = useState("");
 
   useEffect(() => {
     listWorks().then((w) => { setWorks(w); if (w[0]) { setId(w[0].id); setCurrent(w[0].current); } });
@@ -17,7 +22,25 @@ export default function Domande() {
 
   const work = works.find((w) => w.id === id);
   const chunks = useMemo(() => (work ? chunkWork(work) : []), [work]);
-  const res = useMemo(() => (ask ? search(chunks, ask, current) : null), [chunks, ask, current]);
+
+  useEffect(() => { setIdx(null); setRes(null); if (work) getIndex(work.id, chunks.length).then(setIdx); }, [work, chunks.length]);
+
+  async function prepara() {
+    if (!work) return;
+    try { setIdx(await buildIndex(work.id, chunks, setStatus)); setStatus("Ricerca avanzata pronta."); }
+    catch { setStatus("Non sono riuscito a preparare la ricerca avanzata: uso quella semplice."); }
+  }
+
+  async function cerca() {
+    setAsk(q);
+    if (idx) {
+      try {
+        const qv = await embedQuery(q, setStatus);
+        setRes(searchHybrid(chunks, q, current, qv, idx)); setMode("avanzata"); return;
+      } catch { /* ripiega sulla ricerca semplice */ }
+    }
+    setRes(search(chunks, q, current)); setMode("semplice");
+  }
 
   return (
     <main>
@@ -38,11 +61,20 @@ export default function Domande() {
           </label>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Es. Perché Marco ha litigato con Luca?"
             className="mt-4 w-full rounded border border-inchiostro/30 bg-white p-3 text-sm" />
-          <button onClick={() => setAsk(q)} disabled={!q}
+          <button onClick={cerca} disabled={!q}
             className="mt-3 rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">Cerca passaggi</button>
+          <div className="mt-4 text-sm">
+            {idx ? <p>Ricerca avanzata attiva per questa opera.</p> : (
+              <button onClick={prepara} className="rounded border border-segnalibro px-4 py-2 font-semibold text-segnalibro">
+                Prepara ricerca avanzata
+              </button>
+            )}
+            {!idx && <p className="mt-1 text-xs">La prima volta scarica un modello (circa 120 MB) e analizza il libro sul tuo dispositivo: può richiedere alcuni minuti. Fallo con il Wi-Fi.</p>}
+            {status && <p className="mt-1 text-xs">{status}</p>}
+          </div>
           {res && (
             <section className="mt-5">
-              <p className="text-xs">Frammenti consultabili: {res.visible} · nascosti dallo Spoiler Shield: {res.hidden}</p>
+              <p className="text-xs">Ricerca {mode} · frammenti consultabili: {res.visible} · nascosti dallo Spoiler Shield: {res.hidden}</p>
               {res.hits.length === 0 && <p className="mt-3 border-l-4 border-segnalibro bg-white p-3 text-sm">
                 Nessun passaggio trovato fino al capitolo {current}: l'AI risponderebbe che questo non è ancora stato spiegato.</p>}
               <ul className="mt-3 space-y-3">
