@@ -17,6 +17,7 @@ export default function Libreria() {
   return (
     <main>
       <Link href="/" className="text-sm text-segnalibro">Torna alla home</Link>
+      <Link href="/backup" className="ml-4 text-sm text-segnalibro">Backup</Link>
       <h1 className="mt-3 text-3xl font-bold">Libreria</h1>
       {works.length === 0 && <p className="mt-4 text-sm">Nessun libro salvato. <Link href="/aggiungi-file" className="text-segnalibro">Aggiungine uno</Link>.</p>}
       <ul className="mt-4 space-y-4">
