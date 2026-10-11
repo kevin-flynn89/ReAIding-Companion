@@ -66,6 +66,7 @@ export default function Home() {
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href="/aggiungi-file" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Aggiungi un libro</Link>
         <Link href="/libreria" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Libreria</Link>
+        <Link href="/backup" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Backup</Link>
         <Link href="/domande" className="rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">Prova le domande</Link>
       </div>
       <InstallButton />
