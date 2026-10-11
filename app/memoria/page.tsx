@@ -127,7 +127,7 @@ export default function Memoria() {
       )}
 
       {card.analizzati > 0 && <button onClick={azzera} className="mt-6 text-xs text-red-600">Cancella la memoria di questo libro</button>}
-      <p className="mt-4 text-xs">Le schede sono create dall'AI e possono contenere errori o omissioni.</p>
+      <p className="mt-4 text-xs">Le schede sono create dall'AI e possono contenere errori o omissioni. Anche la chat le usa per rispondere meglio (sempre solo fino al capitolo {current}).</p>
     </main>
   );
 }
