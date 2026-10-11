@@ -2,7 +2,7 @@ import { get, set, del } from "idb-keyval";
 
 export type Chapter = { n: number; title: string; text: string };
 export type Work = {
-  id: string; title: string; author: string; kind: string;
+  id: string; title: string; author: string; kind: string; cover?: string;
   chapters: Chapter[]; current: number; createdAt: number;
 };
 
