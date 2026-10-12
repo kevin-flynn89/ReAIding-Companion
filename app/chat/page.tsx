@@ -4,6 +4,7 @@ import Link from "next/link";
 import { listWorks, type Work } from "@/lib/library";
 import { chunkWork } from "@/lib/rag";
 import Conversazione from "../conversazione";
+import { Empty, Icon, TopBar } from "../ui";
 
 export default function Chat() {
   const [work, setWork] = useState<Work | null>(null);
@@ -20,22 +21,23 @@ export default function Chat() {
 
   const chunks = useMemo(() => (work ? chunkWork(work) : []), [work]);
 
-  if (state === "loading") return <main><p className="text-sm">Caricamento...</p></main>;
+  if (state === "loading") return <main><TopBar title="Chat" back="/libreria" backLabel="Libreria" /><p className="mt-4 text-sm text-on-surface-variant">Caricamento...</p></main>;
   if (state === "missing" || !work) return (
     <main>
-      <Link href="/libreria" className="text-sm text-segnalibro">Vai alla libreria</Link>
-      <p className="mt-4 text-sm">Libro non trovato. Aprilo dalla libreria.</p>
+      <TopBar title="Chat" back="/libreria" backLabel="Libreria" />
+      <Empty icon="chat" title="Libro non trovato"><p>Aprilo dalla libreria.</p><Link href="/libreria" className="btn btn-filled mt-6">Vai alla libreria</Link></Empty>
     </main>
   );
 
   return (
-    <main>
-      <Link href="/libreria" className="text-sm text-segnalibro">Libreria</Link>
-      <h1 className="mt-3 text-2xl font-bold leading-snug">{work.title}</h1>
-      <p className="text-xs">Sei al capitolo {work.current} di {work.chapters.length} ·{" "}
-        <Link href={`/lettore?id=${work.id}`} className="text-segnalibro">Torna a leggere</Link></p>
-      <div className="mt-4 bg-white p-3">
-        <Conversazione work={work} current={work.current} chunks={chunks} maxHeight="60vh" />
+    <main className="flex h-dvh flex-col pb-3">
+      <TopBar title={work.title} sub={`Chiedi all'AI · sei al capitolo ${work.current}`} back="/libreria" backLabel="Libreria"
+        actions={<>
+          <Link href={`/memoria?id=${work.id}`} aria-label="Memoria narrativa" className="icon-btn"><Icon name="bulb" /></Link>
+          <Link href={`/lettore?id=${work.id}`} aria-label="Torna a leggere" className="icon-btn"><Icon name="book" /></Link>
+        </>} />
+      <div className="mt-2 min-h-0 flex-1">
+        <Conversazione work={work} current={work.current} chunks={chunks} fill />
       </div>
     </main>
   );
