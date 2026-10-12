@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { listWorks, type Work } from "@/lib/library";
 import { applyShield, chunkWork, search, searchHybrid, type EmbIndex } from "@/lib/rag";
 import { buildIndex, embedQuery, getIndex } from "@/lib/embed";
 import { askAI, sampleSpread } from "@/lib/ask";
+import { Empty, TopBar } from "../ui";
 
 export default function Domande() {
   const [works, setWorks] = useState<Work[]>([]);
@@ -75,29 +75,28 @@ export default function Domande() {
 
   return (
     <main>
-      <Link href="/" className="text-sm text-segnalibro">Torna alla home</Link>
-      <h1 className="mt-3 text-3xl font-bold">Prova le domande</h1>
-      <p className="mt-2 text-sm">Qui vedi i passaggi che l'AI riceverebbe: solo quelli fino al tuo capitolo.</p>
-      {works.length === 0 && <p className="mt-4 text-sm">Prima aggiungi un'opera da file.</p>}
+      <TopBar title="Prova le domande" sub="Strumento di test" back="/" backLabel="Torna alla home" />
+      <p className="banner mt-2">Qui vedi i passaggi che l'AI riceverebbe: solo quelli fino al tuo capitolo.</p>
+      {works.length === 0 && <Empty title="Nessun libro"><p>Prima aggiungi un libro da file.</p></Empty>}
       {work && (
         <>
-          <label className="mt-4 block text-sm">Opera
+          <label className="mt-4 block text-sm font-medium">Libro<br />
             <select value={id} onChange={(e) => { const w = works.find((x) => x.id === e.target.value)!; setId(w.id); setCurrent(w.current); }}
-              className="ml-2 border p-1">{works.map((w) => <option key={w.id} value={w.id}>{w.title.slice(0, 40)}</option>)}</select>
+              className="select mt-1 w-full">{works.map((w) => <option key={w.id} value={w.id}>{w.title.slice(0, 40)}</option>)}</select>
           </label>
-          <label className="mt-3 block text-sm">Sono arrivato al capitolo
-            <select value={current} onChange={(e) => setCurrent(Number(e.target.value))} className="ml-2 border p-1">
+          <label className="mt-3 block text-sm font-medium">Sono arrivato al capitolo<br />
+            <select value={current} onChange={(e) => setCurrent(Number(e.target.value))} className="select mt-1 w-full">
               {work.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
             </select>
           </label>
 
           <div className="mt-4 text-sm">
             {missing === 0 && idx ? <p>Ricerca avanzata pronta fino al capitolo {current}.</p> : (
-              <div className="flex gap-3">
-                <button onClick={prepara} disabled={running} className="rounded border border-segnalibro px-4 py-2 font-semibold text-segnalibro disabled:opacity-40">
+              <div className="flex flex-wrap gap-3">
+                <button onClick={prepara} disabled={running} className="btn btn-outlined">
                   {running ? "Analisi in corso..." : `Prepara ricerca avanzata (${missing} frammenti)`}
                 </button>
-                {running && <button onClick={() => (stop.current = true)} className="px-3 py-2 text-red-600">Interrompi</button>}
+                {running && <button onClick={() => (stop.current = true)} className="btn btn-danger">Interrompi</button>}
               </div>
             )}
             <p className="mt-1 text-xs">Analizza solo fino al capitolo {current}, sul tuo dispositivo. Puoi interrompere e riprendere: i progressi restano salvati. Tieni lo schermo acceso e la pagina aperta.</p>
@@ -105,30 +104,30 @@ export default function Domande() {
           </div>
 
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Es. Perché Marco ha litigato con Luca?"
-            className="mt-4 w-full rounded border border-inchiostro/30 bg-white p-3 text-sm" />
+            className="field mt-4" />
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={() => chiedi(q)} disabled={!q || running || thinking}
-              className="rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">{thinking ? "Sto pensando..." : "Chiedi"}</button>
+              className="btn btn-filled">{thinking ? "Sto pensando..." : "Chiedi"}</button>
             <button onClick={() => chiedi("Riassumi quello che è successo fin qui.", true)} disabled={running || thinking}
-              className="rounded border border-segnalibro px-4 py-3 text-sm font-semibold text-segnalibro disabled:opacity-40">Riassumi fin qui</button>
+              className="btn btn-tonal">Riassumi fin qui</button>
             <button onClick={() => chiedi("Cosa devo ricordare? Elenca personaggi, relazioni, eventi e misteri aperti.", true)} disabled={running || thinking}
-              className="rounded border border-segnalibro px-4 py-3 text-sm font-semibold text-segnalibro disabled:opacity-40">Cosa devo ricordare?</button>
+              className="btn btn-tonal">Cosa devo ricordare?</button>
           </div>
           {answer && (
-            <section className="mt-5 border-l-4 border-segnalibro bg-white p-4">
-              <h2 className="text-lg font-bold">Risposta (fino al capitolo {current})</h2>
+            <section className="card mt-5 border-l-4 border-primary">
+              <h2 className="text-lg font-semibold">Risposta (fino al capitolo {current})</h2>
               <p className="mt-2 whitespace-pre-line text-sm">{answer}</p>
             </section>
           )}
           {res && (
             <details className="mt-5">
-              <summary className="cursor-pointer text-sm font-semibold">Passaggi usati per la risposta ({res.hits.length})</summary>
+              <summary className="cursor-pointer py-2 text-sm font-semibold">Passaggi usati per la risposta ({res.hits.length})</summary>
               <p className="mt-2 text-xs">Ricerca {mode} · frammenti consultabili: {res.visible} · nascosti dallo Spoiler Shield: {res.hidden}</p>
-              {res.hits.length === 0 && <p className="mt-3 border-l-4 border-segnalibro bg-white p-3 text-sm">
+              {res.hits.length === 0 && <p className="card mt-3 text-sm">
                 Nessun passaggio trovato fino al capitolo {current}: l'AI risponderebbe che questo non è ancora stato spiegato.</p>}
               <ul className="mt-3 space-y-3">
                 {res.hits.map((h) => (
-                  <li key={h.id} className="border-l-4 border-segnalibro bg-white p-3 text-sm">
+                  <li key={h.id} className="card border-l-4 border-primary p-3 text-sm">
                     <span className="font-semibold">Cap. {h.chapter}</span> · punteggio {h.score.toFixed(1)}
                     <p className="mt-1">{h.text.length > 350 ? h.text.slice(0, 350) + "..." : h.text}</p>
                   </li>
