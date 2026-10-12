@@ -1,26 +1,29 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { parseEpub, parseMobi, type Parsed } from "@/lib/parsers";
 import { saveWork } from "@/lib/library";
 import Cover from "../copertina";
+import { Icon, TopBar } from "../ui";
 
 export default function AggiungiFile() {
   const [p, setP] = useState<Parsed | null>(null);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saved, setSaved] = useState(false);
+  const [drag, setDrag] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
 
   async function onFile(f: File | undefined) {
     if (!f) return;
-    setMsg("Lettura in corso..."); setP(null); setSaved(false);
+    setMsg({ ok: true, text: "Lettura in corso..." }); setP(null); setSaved(false);
     try {
       const name = f.name.toLowerCase();
       if (name.endsWith(".epub")) setP(await parseEpub(f));
       else if (name.endsWith(".mobi") || name.endsWith(".azw3")) setP(await parseMobi(f));
-      else { setMsg("Formati supportati: EPUB e MOBI."); return; }
-      setMsg("");
+      else { setMsg({ ok: false, text: "Formati supportati: EPUB e MOBI." }); return; }
+      setMsg(null);
     } catch {
-      setMsg("Non riesco a leggere questo file. Se arriva da un negozio potrebbe avere protezione DRM: in quel caso non posso aprirlo.");
+      setMsg({ ok: false, text: "Non riesco a leggere questo file. Se arriva da un negozio potrebbe avere protezione DRM: in quel caso non posso aprirlo." });
     }
   }
 
@@ -32,29 +35,39 @@ export default function AggiungiFile() {
 
   return (
     <main>
-      <Link href="/" className="text-sm text-segnalibro">Torna alla home</Link>
-      <h1 className="mt-3 text-3xl font-bold">Aggiungi un libro</h1>
-      <p className="mt-2 text-sm">Scegli un file EPUB o MOBI. Resta sul tuo dispositivo.</p>
-      <input type="file" accept=".epub,.mobi,.azw3" onChange={(e) => onFile(e.target.files?.[0])} className="mt-4 block w-full text-sm" />
-      {msg && <p className="mt-4 text-sm">{msg}</p>}
+      <TopBar title="Aggiungi un libro" back="/" backLabel="Torna alla home" />
+      <button type="button" onClick={() => input.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); onFile(e.dataTransfer.files?.[0]); }}
+        className={`mt-2 flex w-full flex-col items-center gap-3 rounded-[28px] border-2 border-dashed px-6 py-10 text-center transition ${drag ? "border-primary bg-primary-container" : "border-outline-variant bg-surface-container hover:bg-surface-high"}`}>
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-container text-on-primary-container"><Icon name="upload" className="h-8 w-8" /></span>
+        <span className="text-lg font-semibold">Scegli un file EPUB o MOBI</span>
+        <span className="text-sm text-on-surface-variant">Il libro resta sul tuo dispositivo. <span className="hidden md:inline">Puoi anche trascinarlo qui.</span></span>
+      </button>
+      <input ref={input} type="file" accept=".epub,.mobi,.azw3" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
+
+      {msg && <p role="status" className={`mt-4 ${msg.ok ? "banner" : "banner-error"}`}>{msg.text}</p>}
+
       {p && (
-        <section className="mt-6 bg-white p-4">
+        <section className="card mt-6">
           <div className="flex gap-4">
-            <Cover work={{ title: p.title, cover: p.cover }} className="h-28 w-20 shrink-0 rounded" />
-            <div>
-              <h2 className="text-xl font-bold leading-snug">{p.title}</h2>
-              <p className="text-sm">{p.author || "Autore non trovato"} · {p.chapters.length} capitoli</p>
+            <Cover work={{ title: p.title, cover: p.cover }} className="h-36 w-24" />
+            <div className="min-w-0">
+              <h2 className="font-serif text-xl font-semibold leading-snug">{p.title}</h2>
+              <p className="mt-1 text-sm text-on-surface-variant">{p.author || "Autore non trovato"}</p>
+              <p className="mt-1 text-sm text-on-surface-variant">{p.chapters.length} capitoli</p>
             </div>
           </div>
-          <ul className="mt-3 max-h-40 overflow-auto text-sm">
-            {p.chapters.slice(0, 30).map((c) => <li key={c.n} className="py-0.5">{c.n}. {c.title.slice(0, 50)}</li>)}
+          <ul className="mt-4 max-h-44 space-y-1 overflow-auto rounded-xl bg-surface p-3 text-sm">
+            {p.chapters.slice(0, 30).map((c) => <li key={c.n} className="truncate"><span className="text-on-surface-variant">{c.n}.</span> {c.title.slice(0, 60)}</li>)}
           </ul>
-          {p.chapters.length === 0 && <p className="mt-2 text-sm">Nessun testo trovato nel file.</p>}
-          <button onClick={salva} disabled={saved || p.chapters.length === 0}
-            className="mt-4 rounded bg-segnalibro px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">
-            {saved ? "Salvato" : "Salva in libreria"}
-          </button>
-          {saved && <Link href="/libreria" className="ml-4 text-sm text-segnalibro">Vai alla libreria</Link>}
+          {p.chapters.length === 0 && <p className="mt-3 text-sm text-error">Nessun testo trovato nel file.</p>}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button onClick={salva} disabled={saved || p.chapters.length === 0} className="btn btn-filled flex-1 sm:flex-none">
+              {saved ? <><Icon name="check" className="h-5 w-5" />Salvato</> : "Salva in libreria"}
+            </button>
+            {saved && <Link href="/libreria" className="btn btn-tonal flex-1 sm:flex-none">Vai alla libreria</Link>}
+          </div>
         </section>
       )}
     </main>
