@@ -1,5 +1,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-body { background: #EEF1F6; color: #14213D; font-family: system-ui, sans-serif; }
-h1, h2 { font-family: Georgia, "Times New Roman", serif; }
+
+/* Colori Material Design 3: chiaro e scuro (segue il telefono) */
+:root {
+  --c-surface: 246 248 250;
+  --c-surface-container: 234 240 243;
+  --c-surface-high: 223 231 236;
+  --c-on-surface: 16 32 43;
+  --c-on-surface-variant: 68 85 95;
+  --c-primary: 11 107 109;
+  --c-on-primary: 255 255 255;
+  --c-primary-container: 196 235 236;
+  --c-on-primary-container: 0 32 31;
+  --c-secondary-container: 211 230 232;
+  --c-on-secondary-container: 12 42 44;
+  --c-tertiary: 176 111 8;
+  --c-tertiary-container: 255 221 176;
+  --c-on-tertiary-container: 43 23 0;
+  --c-outline: 110 128 138;
+  --c-outline-variant: 194 206 213;
+  --c-error: 186 26 26;
+  --c-error-container: 255 218 214;
+  --c-on-error-container: 65 0 2;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+  --c-surface: 13 22 30;
+  --c-surface-container: 22 34 44;
+  --c-surface-high: 31 46 58;
+  --c-on-surface: 224 233 239;
+  --c-on-surface-variant: 167 184 195;
+  --c-primary: 111 211 213;
+  --c-on-primary: 0 55 56;
+  --c-primary-container: 0 79 81;
+  --c-on-primary-container: 196 235 236;
+  --c-secondary-container: 37 66 70;
+  --c-on-secondary-container: 203 232 234;
+  --c-tertiary: 242 190 107;
+  --c-tertiary-container: 91 58 0;
+  --c-on-tertiary-container: 255 221 176;
+  --c-outline: 135 153 164;
+  --c-outline-variant: 51 68 79;
+  --c-error: 255 180 171;
+  --c-error-container: 147 0 10;
+  --c-on-error-container: 255 218 214;
+  }
+}
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    background: rgb(var(--c-surface)); color: rgb(var(--c-on-surface));
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px; line-height: 1.5;
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+  }
+  h1 { font-family: Charter, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  :focus-visible { outline: 3px solid rgb(var(--c-primary)); outline-offset: 2px; }
+  select, input, button { font: inherit; }
+}
+
+@layer components {
+  .btn { @apply inline-flex min-h-[48px] select-none items-center justify-center gap-2 rounded-full px-6 text-[15px] font-medium transition active:scale-[.98] disabled:pointer-events-none disabled:opacity-40; }
+  .btn-sm { @apply min-h-[40px] px-4 text-sm; }
+  .btn-filled { @apply bg-primary text-on-primary hover:shadow-md; }
+  .btn-tonal { @apply bg-secondary-container text-on-secondary-container hover:shadow; }
+  .btn-outlined { @apply border border-outline text-primary hover:bg-primary/10; }
+  .btn-text { @apply px-3 text-primary hover:bg-primary/10; }
+  .btn-danger { @apply px-3 text-error hover:bg-error/10; }
+  .icon-btn { @apply inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-on-surface/10 active:bg-on-surface/15 disabled:opacity-40; }
+  .card { @apply rounded-[20px] bg-surface-container p-4; }
+  .chip { @apply inline-flex h-10 shrink-0 items-center gap-1 rounded-lg border border-outline-variant px-4 text-sm font-medium text-on-surface-variant transition hover:bg-on-surface/5; }
+  .chip[aria-selected="true"] { @apply border-transparent bg-secondary-container text-on-secondary-container; }
+  .field { @apply w-full rounded-xl border border-outline bg-surface px-4 py-3 text-base text-on-surface placeholder:text-on-surface-variant/70; }
+  .select { @apply min-h-[48px] rounded-xl border border-outline bg-surface px-3 text-base text-on-surface; }
+  .banner { @apply rounded-2xl bg-surface-high p-4 text-sm; }
+  .banner-error { @apply rounded-2xl bg-error-container p-4 text-sm text-on-error-container; }
+  .progress { @apply h-1.5 w-full overflow-hidden rounded-full bg-on-surface/10; }
+  .progress > span { @apply block h-full rounded-full bg-primary; }
+  .ribbon { position: absolute; top: 0; right: 10%; width: 14px; height: 22px; background: rgb(var(--c-tertiary));
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%); filter: drop-shadow(0 1px 1px rgb(0 0 0 / .25)); }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }

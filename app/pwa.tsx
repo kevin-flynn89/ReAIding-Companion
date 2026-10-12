@@ -32,11 +32,11 @@ export function InstallButton() {
 
   if (installed) return null;
   if (ev) return (
-    <button onClick={async () => { ev.prompt(); await ev.userChoice; setEv(null); }}
-      className="mt-4 rounded border border-segnalibro px-4 py-2 text-sm font-semibold text-segnalibro">
-      Installa l'app
-    </button>
+    <div className="card mt-6 flex items-center gap-3">
+      <p className="flex-1 text-sm">Installa l'app per leggere a schermo intero, anche senza connessione.</p>
+      <button onClick={async () => { ev.prompt(); await ev.userChoice; setEv(null); }} className="btn btn-filled btn-sm">Installa</button>
+    </div>
   );
-  if (ios) return <p className="mt-4 text-xs">Per installarla: tocca Condividi, poi "Aggiungi alla schermata Home".</p>;
+  if (ios) return <p className="banner mt-6">Per installarla: tocca Condividi, poi "Aggiungi alla schermata Home".</p>;
   return null;
 }

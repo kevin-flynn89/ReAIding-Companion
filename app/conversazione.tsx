@@ -4,9 +4,11 @@ import type { Work } from "@/lib/library";
 import type { Chunk } from "@/lib/rag";
 import { clearChat, historyFor, loadChat, saveChat, type Msg } from "@/lib/chat";
 import { answer } from "@/lib/companion";
+import { Icon } from "./ui";
 
 // Conversazione con l'AI per un libro. La cronologia resta salvata sul dispositivo.
-export default function Conversazione({ work, current, chunks, maxHeight = "40vh" }: { work: Work; current: number; chunks: Chunk[]; maxHeight?: string }) {
+// fill = occupa tutta l'altezza del contenitore (pagina chat); altrimenti i messaggi scorrono fino a maxHeight.
+export default function Conversazione({ work, current, chunks, maxHeight = "40vh", fill = false }: { work: Work; current: number; chunks: Chunk[]; maxHeight?: string; fill?: boolean }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,33 +42,44 @@ export default function Conversazione({ work, current, chunks, maxHeight = "40vh
   }
 
   return (
-    <div className="text-sm">
-      <p className="text-xs">Le risposte usano solo i capitoli fino al {current}.</p>
-      <div className="mt-2 overflow-auto" style={{ maxHeight }}>
-        {msgs.length === 0 && <p className="py-2 text-xs">Nessun messaggio. Fai una domanda sulla storia: puoi anche continuare con domande brevi come "e lui che ruolo ha?".</p>}
-        <ul className="space-y-2">
+    <div className={`flex flex-col text-[15px] ${fill ? "h-full min-h-0" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-xs text-on-surface-variant"><Icon name="shield" className="h-4 w-4 shrink-0" />Le risposte usano solo i capitoli fino al {current}.</p>
+        {msgs.length > 0 && <button onClick={svuota} aria-label="Cancella cronologia" title="Cancella cronologia" className="icon-btn -my-2 -mr-2 h-10 w-10 shrink-0 text-on-surface-variant"><Icon name="trash" className="h-5 w-5" /></button>}
+      </div>
+
+      <div className={`mt-3 overflow-y-auto ${fill ? "min-h-0 flex-1" : ""}`} style={fill ? undefined : { maxHeight }}>
+        {msgs.length === 0 && (
+          <div className="rounded-2xl bg-surface-container p-4 text-sm text-on-surface-variant">
+            Fai una domanda sulla storia. Puoi continuare con domande brevi, come "e lui che ruolo ha?".
+          </div>
+        )}
+        <ul className="space-y-3">
           {msgs.map((m) => (
-            <li key={m.ts + m.role} className={m.role === "user" ? "flex justify-end" : ""}>
-              <div className={`max-w-[92%] whitespace-pre-line rounded p-2 ${m.role === "user" ? "bg-segnalibro text-white" : "border-l-4 border-segnalibro bg-white"}`}>
+            <li key={m.ts + m.role} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div className={`max-w-[88%] whitespace-pre-line rounded-[20px] px-4 py-2.5 ${m.role === "user" ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md bg-surface-high text-on-surface"}`}>
                 {m.text}
-                <span className="mt-1 block text-[10px] opacity-60">cap. {m.chapter}</span>
+                <span className="mt-1 block text-[11px] opacity-70">cap. {m.chapter}</span>
               </div>
             </li>
           ))}
-          {busy && <li className="text-xs">Sto pensando...</li>}
+          {busy && <li className="flex justify-start"><div className="rounded-[20px] rounded-bl-md bg-surface-high px-4 py-3 text-sm text-on-surface-variant" role="status">Sto pensando...</div></li>}
         </ul>
         <div ref={end} />
       </div>
-      {err && <p className="mt-2 text-red-600">{err}</p>}
-      <form onSubmit={(e) => { e.preventDefault(); invia(q); }} className="mt-2 flex gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Scrivi una domanda..." className="min-w-0 flex-1 rounded border border-inchiostro/30 p-2" />
-        <button type="submit" disabled={!q.trim() || busy} className="rounded bg-segnalibro px-4 py-2 font-semibold text-white disabled:opacity-40">Invia</button>
-      </form>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <button onClick={() => invia("Riassumi fin qui", true)} disabled={busy} className="rounded border border-segnalibro px-3 py-1 text-xs font-semibold text-segnalibro disabled:opacity-40">Riassumi fin qui</button>
-        <button onClick={() => invia("Cosa devo ricordare?", true)} disabled={busy} className="rounded border border-segnalibro px-3 py-1 text-xs font-semibold text-segnalibro disabled:opacity-40">Cosa devo ricordare?</button>
-        {msgs.length > 0 && <button onClick={svuota} className="ml-auto text-xs text-red-600">Cancella cronologia</button>}
+
+      {err && <p role="alert" className="banner-error mt-3">{err}</p>}
+
+      <div className="-mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 pb-1">
+        <button onClick={() => invia("Riassumi fin qui", true)} disabled={busy} className="chip">Riassumi fin qui</button>
+        <button onClick={() => invia("Cosa devo ricordare?", true)} disabled={busy} className="chip">Cosa devo ricordare?</button>
       </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); invia(q); }} className="mt-2 flex items-center gap-2">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Scrivi una domanda" aria-label="Domanda sul libro" enterKeyHint="send"
+          className="min-h-[52px] min-w-0 flex-1 rounded-full border border-outline bg-surface px-5 text-base text-on-surface placeholder:text-on-surface-variant/70" />
+        <button type="submit" disabled={!q.trim() || busy} aria-label="Invia" className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition active:scale-95 disabled:opacity-40"><Icon name="send" /></button>
+      </form>
     </div>
   );
 }
