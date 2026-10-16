@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { listWorks, type Work } from "@/lib/library";
+import { getWork, type Work } from "@/lib/library";
 import { Empty, Icon, TopBar } from "../ui";
 import { buildCard, buildMemory, clearMem, loadMem, type Card, type Item, type MemStore } from "@/lib/memory";
 
@@ -23,8 +23,7 @@ export default function Memoria() {
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
-    listWorks().then(async (ws) => {
-      const w = ws.find((x) => x.id === id);
+    getWork(id).then(async (w) => {
       if (!w) { setState("missing"); return; }
       setWork(w); setMem(await loadMem(w.id)); setState("ok");
     });
