@@ -1,17 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listWorks, removeWork, saveWork, type Work } from "@/lib/library";
+import { listBooks, removeWork, setProgress, type BookMeta } from "@/lib/library";
 import Cover from "../copertina";
 import { Empty, Icon, TopBar } from "../ui";
 
 export default function Libreria() {
-  const [works, setWorks] = useState<Work[] | null>(null);
-  const refresh = () => listWorks().then(setWorks);
+  const [works, setWorks] = useState<BookMeta[] | null>(null);
+  const refresh = () => listBooks().then(setWorks);
   useEffect(() => { refresh(); }, []);
 
-  async function setCurrent(w: Work, n: number) { await saveWork({ ...w, current: n }); refresh(); }
-  async function elimina(w: Work) {
+  async function setCurrent(w: BookMeta, n: number) { await setProgress(w.id, n); refresh(); }
+  async function elimina(w: BookMeta) {
     if (window.confirm(`Eliminare "${w.title}" dalla libreria?`)) { await removeWork(w.id); refresh(); }
   }
 
@@ -28,7 +28,7 @@ export default function Libreria() {
       )}
       <ul className="mt-2 grid gap-4 md:grid-cols-2">
         {works?.map((w) => {
-          const read = w.chapters.filter((c) => c.n <= w.current).length;
+          const read = Math.min(w.current, w.chapterCount);
           return (
             <li key={w.id} className="card flex flex-col gap-4">
               <div className="flex gap-4">
@@ -37,8 +37,8 @@ export default function Libreria() {
                   <h2 className="font-serif text-lg font-semibold leading-snug">{w.title}</h2>
                   <p className="truncate text-sm text-on-surface-variant">{w.author || "Autore non indicato"}</p>
                   <div className="mt-auto pt-3">
-                    <p className="text-xs text-on-surface-variant">Capitolo {w.current} di {w.chapters.length}</p>
-                    <div className="progress mt-1.5"><span style={{ width: `${Math.round((w.current / Math.max(1, w.chapters.length)) * 100)}%` }} /></div>
+                    <p className="text-xs text-on-surface-variant">Capitolo {w.current} di {w.chapterCount}</p>
+                    <div className="progress mt-1.5"><span style={{ width: `${Math.round((w.current / Math.max(1, w.chapterCount)) * 100)}%` }} /></div>
                   </div>
                 </div>
               </div>
@@ -51,14 +51,14 @@ export default function Libreria() {
                 <label className="flex items-center gap-2 text-sm">
                   <span className="text-on-surface-variant">Sono al cap.</span>
                   <select value={w.current} onChange={(e) => setCurrent(w, Number(e.target.value))} className="select min-h-[40px] py-1">
-                    {w.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}</option>)}
+                    {Array.from({ length: w.chapterCount }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
                   </select>
                 </label>
                 <button onClick={() => elimina(w)} aria-label={`Elimina ${w.title}`} className="icon-btn text-error"><Icon name="trash" /></button>
               </div>
               <p className="flex items-start gap-2 text-xs text-on-surface-variant">
                 <Icon name="shield" className="mt-0.5 h-4 w-4 shrink-0" />
-                Spoiler Shield: l'AI usa {read} {read === 1 ? "capitolo" : "capitoli"} e ne tiene nascosti {w.chapters.length - read}.
+                Spoiler Shield: l'AI usa {read} {read === 1 ? "capitolo" : "capitoli"} e ne tiene nascosti {w.chapterCount - read}.
               </p>
             </li>
           );
