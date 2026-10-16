@@ -1,18 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLastOpened, listWorks, type Work } from "@/lib/library";
+import { getLastOpened, listBooks, type BookMeta } from "@/lib/library";
 import Cover from "./copertina";
 import { InstallButton } from "./pwa";
 import { Empty, Icon, TopBar } from "./ui";
 
-const pct = (w: Work) => Math.round((w.current / Math.max(1, w.chapters.length)) * 100);
+const pct = (w: BookMeta) => Math.round((w.current / Math.max(1, w.chapterCount)) * 100);
 
 export default function Home() {
-  const [works, setWorks] = useState<Work[] | null>(null);
+  const [works, setWorks] = useState<BookMeta[] | null>(null);
   const [last, setLast] = useState<string | null>(null);
 
-  useEffect(() => { listWorks().then(setWorks); getLastOpened().then(setLast); }, []);
+  useEffect(() => { listBooks().then(setWorks); getLastOpened().then(setLast); }, []);
 
   const cont = works?.find((w) => w.id === last) ?? works?.[0];
   const others = (works || []).filter((w) => w.id !== cont?.id).slice(0, 10);
@@ -39,8 +39,8 @@ export default function Home() {
               <p className="font-serif text-2xl font-semibold leading-tight">{cont.title}</p>
               <p className="mt-1 truncate text-sm opacity-80">{cont.author || "Autore non indicato"}</p>
               <div className="mt-auto pt-4">
-                <p className="text-xs font-medium">Capitolo {cont.current} di {cont.chapters.length}</p>
-                <div className="progress mt-2" role="progressbar" aria-valuenow={cont.current} aria-valuemin={1} aria-valuemax={cont.chapters.length}><span style={{ width: `${pct(cont)}%` }} /></div>
+                <p className="text-xs font-medium">Capitolo {cont.current} di {cont.chapterCount}</p>
+                <div className="progress mt-2" role="progressbar" aria-valuenow={cont.current} aria-valuemin={1} aria-valuemax={cont.chapterCount}><span style={{ width: `${pct(cont)}%` }} /></div>
               </div>
             </div>
           </div>
