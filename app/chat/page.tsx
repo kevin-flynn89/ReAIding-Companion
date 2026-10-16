@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { listWorks, type Work } from "@/lib/library";
+import { getWork, type Work } from "@/lib/library";
 import { chunkWork } from "@/lib/rag";
 import Conversazione from "../conversazione";
 import { Empty, Icon, TopBar } from "../ui";
@@ -12,8 +12,7 @@ export default function Chat() {
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
-    listWorks().then((ws) => {
-      const w = ws.find((x) => x.id === id);
+    getWork(id).then((w) => {
       if (!w) { setState("missing"); return; }
       setWork(w); setState("ok");
     });
