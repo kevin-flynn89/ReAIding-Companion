@@ -1,5 +1,5 @@
 import { get, set } from "idb-keyval";
-import { listWorks, saveWork, setProgress, type Work } from "./library";
+import { getWork, listBooks, saveWork, setProgress, type Work } from "./library";
 import { loadChat, saveChat, type Msg } from "./chat";
 import { loadMem, saveMem, type MemStore } from "./memory";
 
@@ -15,7 +15,8 @@ export function backupName() {
 }
 
 export async function makeBackup(ids: string[]): Promise<Blob> {
-  const works = (await listWorks()).filter((w) => ids.includes(w.id));
+  const works: Work[] = [];
+  for (const id of ids) { const w = await getWork(id); if (w) works.push(w); }
   const head: BackupHead = { app: "ai-reading-companion", version: 1, exportedAt: Date.now(), count: works.length };
   const parts: string[] = [`{"head":${JSON.stringify(head)},"books":[`];
   for (let i = 0; i < works.length; i++) {
@@ -39,7 +40,7 @@ export async function importBackup(file: File): Promise<ImportResult> {
   if (data?.head?.app !== "ai-reading-companion" || !Array.isArray(data.books)) {
     throw new Error("Questo file non è un backup di AI Reading Companion.");
   }
-  const existing = await listWorks();
+  const existing = await listBooks();
   const res: ImportResult = { added: 0, updated: 0, skipped: 0 };
   for (const b of data.books as BackupBook[]) {
     if (!validWork(b?.work)) { res.skipped++; continue; }

@@ -82,6 +82,19 @@ export async function parseEpub(file: File): Promise<Parsed> {
 }
 
 // MOBI / AZW3 (senza DRM). I file protetti da DRM non vengono letti: non aggiro le protezioni.
+// Copertina MOBI/AZW3. Il parser incluso la scarta quando il suo indice è 0 (molto comune nei file di Calibre),
+// quindi la leggo direttamente dalla risorsa indicata nei metadati.
+async function mobiCover(book: any): Promise<string | undefined> {
+  try {
+    let blob: Blob | undefined;
+    const mf = book.mobiFile, ex = mf?.exth;
+    const off = Number(ex?.coverOffset ?? ex?.thumbnailOffset ?? 4294967295);
+    if (mf && off < 4294967295) { const r = mf.loadResource(off); blob = new Blob([r.raw], { type: r.type }); }
+    else { const url = book.getCoverImage?.(); if (url) blob = await (await fetch(url)).blob(); }
+    return blob && blob.size > 100 ? await shrink(blob) : undefined;
+  } catch { return undefined; }
+}
+
 export async function parseMobi(file: File): Promise<Parsed> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   let book: any;
@@ -93,6 +106,7 @@ export async function parseMobi(file: File): Promise<Parsed> {
     if (loaded?.html) items.push(htmlToText(loaded.html));
   }
   const author = Array.isArray(meta.author) ? meta.author.join(", ") : meta.author || "";
+  const cover = await mobiCover(book);
   book.destroy?.();
-  return { title: meta.title || file.name.replace(/\.[^.]+$/, ""), author, chapters: finalize(items) };
+  return { title: meta.title || file.name.replace(/\.[^.]+$/, ""), author, cover, chapters: finalize(items) };
 }
