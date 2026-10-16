@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { listWorks, type Work } from "@/lib/library";
+import { listBooks, getWork, type BookMeta, type Work } from "@/lib/library";
 import { applyShield, chunkWork, search, searchHybrid, type EmbIndex } from "@/lib/rag";
 import { buildIndex, embedQuery, getIndex } from "@/lib/embed";
 import { askAI, sampleSpread } from "@/lib/ask";
 import { Empty, TopBar } from "../ui";
 
 export default function Domande() {
-  const [works, setWorks] = useState<Work[]>([]);
+  const [works, setWorks] = useState<BookMeta[]>([]);
   const [id, setId] = useState("");
+  const [work, setWorkState] = useState<Work | null>(null);
   const [current, setCurrent] = useState(1);
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState<EmbIndex | null>(null);
@@ -21,10 +22,16 @@ export default function Domande() {
   const stop = useRef(false);
 
   useEffect(() => {
-    listWorks().then((w) => { setWorks(w); if (w[0]) { setId(w[0].id); setCurrent(w[0].current); } });
+    listBooks().then((w) => { setWorks(w); if (w[0]) { setId(w[0].id); setCurrent(w[0].current); } });
   }, []);
 
-  const work = works.find((w) => w.id === id);
+  useEffect(() => {
+    if (!id) return;
+    let ok = true;
+    getWork(id).then((w) => { if (ok) setWorkState(w); });
+    return () => { ok = false; };
+  }, [id]);
+
   const chunks = useMemo(() => (work ? chunkWork(work) : []), [work]);
   const wanted = useMemo(() => applyShield(chunks, current), [chunks, current]); // solo fino al tuo capitolo
   const missing = useMemo(() => { const have = new Set(idx?.ids || []); return wanted.filter((c) => !have.has(c.id)).length; }, [wanted, idx]);
