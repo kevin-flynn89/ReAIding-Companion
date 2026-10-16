@@ -1,18 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { listWorks, type Work } from "@/lib/library";
+import { listBooks, type BookMeta } from "@/lib/library";
 import { Icon, TopBar } from "../ui";
 import { backupName, importBackup, makeBackup } from "@/lib/backup";
 
 export default function Backup() {
-  const [works, setWorks] = useState<Work[] | null>(null);
+  const [works, setWorks] = useState<BookMeta[] | null>(null);
   const [sel, setSel] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { listWorks().then((w) => { setWorks(w); setSel(w.map((x) => x.id)); }); }, []);
+  useEffect(() => { listBooks().then((w) => { setWorks(w); setSel(w.map((x) => x.id)); }); }, []);
 
   const toggle = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
@@ -36,7 +36,7 @@ export default function Backup() {
     setBusy(true); setMsg(null);
     try {
       const r = await importBackup(f);
-      setWorks(await listWorks());
+      setWorks(await listBooks());
       const parts = [];
       if (r.added) parts.push(`${r.added} libri aggiunti`);
       if (r.updated) parts.push(`${r.updated} già presenti (progresso e chat uniti)`);
