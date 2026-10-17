@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useQuota } from "@/lib/quota";
+import { PROVIDERS, loadConfig, useAiReady, useUsage } from "@/lib/aiconfig";
 
 // Icone semplici in stile Material (24x24)
 const P = {
@@ -20,6 +20,8 @@ const P = {
   check: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
   shield: "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",
   spark: "M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z",
+  settings: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+  eye: "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
   backup: "M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z",
 } as const;
 export type IconName = keyof typeof P;
@@ -86,16 +88,20 @@ export function Wavy({ value, max, label = "Avanzamento" }: { value: number; max
   return <div className="wavy" role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={1} aria-valuemax={max}><span style={{ width: `${Math.max(pct, 6)}%` }} /></div>;
 }
 
-// "Domande rimaste oggi" (stima locale della quota gratuita)
-export function QuotaChip({ className = "" }: { className?: string }) {
-  const left = useQuota();
-  const low = left <= 10;
+// Stato dell'AI: se manca la chiave invita a collegarla, altrimenti mostra i token usati oggi
+export function AiChip({ className = "" }: { className?: string }) {
+  const ready = useAiReady();
+  const u = useUsage();
+  if (ready === null) return null;
+  if (!ready) {
+    return <Link href="/impostazioni" className={`inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-xs font-semibold text-on-tertiary-container ${className}`}><Icon name="spark" className="h-3.5 w-3.5" />Collega la tua AI</Link>;
+  }
+  const name = PROVIDERS.find((p) => p.id === loadConfig().provider)?.label.split(" ")[0] || "AI";
+  const k = u.inT + u.outT;
   return (
-    <span title="Stima: la quota gratuita si azzera a mezzanotte UTC (circa le 2:00 in Italia)"
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${low ? "bg-error-container text-on-error-container" : "bg-tertiary-container text-on-tertiary-container"} ${className}`}>
-      <Icon name="spark" className="h-3.5 w-3.5" />
-      {left === 0 ? "Domande finite per oggi" : `~${left} domande rimaste oggi`}
-    </span>
+    <Link href="/impostazioni" title="Token usati oggi su questo dispositivo (stima del provider)" className={`inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container ${className}`}>
+      <Icon name="spark" className="h-3.5 w-3.5" />{name} · {k < 1000 ? k : `${(k / 1000).toFixed(k < 10000 ? 1 : 0)}k`} token oggi
+    </Link>
   );
 }
 

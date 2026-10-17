@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getLastOpened, listBooks, type BookMeta } from "@/lib/library";
 import Cover from "./copertina";
 import { InstallButton } from "./pwa";
+import { useAiReady } from "@/lib/aiconfig";
 import { Blob, Empty, Icon, ShapeBg, TopBar, Wavy, Wordmark } from "./ui";
 
 const saluto = () => { const h = new Date().getHours(); return h < 6 ? "Buona notte" : h < 13 ? "Buongiorno" : h < 19 ? "Buon pomeriggio" : "Buonasera"; };
@@ -11,6 +12,7 @@ const saluto = () => { const h = new Date().getHours(); return h < 6 ? "Buona no
 export default function Home() {
   const [works, setWorks] = useState<BookMeta[] | null>(null);
   const [last, setLast] = useState<string | null>(null);
+  const ready = useAiReady();
 
   useEffect(() => { listBooks().then(setWorks); getLastOpened().then(setLast); }, []);
 
@@ -20,6 +22,13 @@ export default function Home() {
   return (
     <main>
       <TopBar title={<Wordmark />} sub={`${saluto()}! Leggi, e chiedi senza spoiler.`} />
+
+      {ready === false && (
+        <Link href="/impostazioni" className="card card-lift mb-4 flex items-center gap-4 bg-tertiary-container text-on-tertiary-container">
+          <Blob icon="spark" shape="burst" tone="solid" className="h-14 w-14" />
+          <span><span className="block text-lg font-bold">Collega la tua AI</span><span className="block text-sm">Inserisci la tua chiave API per fare domande e creare la memoria.</span></span>
+        </Link>
+      )}
 
       {works === null && <p className="mt-6 text-sm text-on-surface-variant">Caricamento...</p>}
 

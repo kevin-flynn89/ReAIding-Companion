@@ -4,7 +4,9 @@ import type { Work } from "@/lib/library";
 import type { Chunk } from "@/lib/rag";
 import { clearChat, historyFor, loadChat, saveChat, type Msg } from "@/lib/chat";
 import { answer } from "@/lib/companion";
-import { Icon, Loader, QuotaChip } from "./ui";
+import Link from "next/link";
+import { useAiReady } from "@/lib/aiconfig";
+import { AiChip, Icon, Loader } from "./ui";
 
 // Conversazione con l'AI per un libro. La cronologia resta salvata sul dispositivo.
 // fill = occupa tutta l'altezza del contenitore (pagina chat); altrimenti i messaggi scorrono fino a maxHeight.
@@ -14,6 +16,7 @@ export default function Conversazione({ work, current, chunks, maxHeight = "40vh
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const end = useRef<HTMLDivElement>(null);
+  const ready = useAiReady();
 
   useEffect(() => { loadChat(work.id).then(setMsgs); }, [work.id]);
   useEffect(() => { end.current?.scrollIntoView({ block: "nearest" }); }, [msgs.length, busy]);
@@ -46,11 +49,18 @@ export default function Conversazione({ work, current, chunks, maxHeight = "40vh
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col items-start gap-1.5">
           <p className="flex items-center gap-2 text-xs text-on-surface-variant"><Icon name="shield" className="h-4 w-4 shrink-0" />Le risposte usano solo i capitoli fino al {current}.</p>
-          <QuotaChip />
+          <AiChip />
         </div>
         {msgs.length > 0 && <button onClick={svuota} aria-label="Cancella cronologia" title="Cancella cronologia" className="icon-btn -my-2 -mr-2 h-10 w-10 shrink-0 text-on-surface-variant"><Icon name="trash" className="h-5 w-5" /></button>}
       </div>
 
+      {ready === false && (
+        <div className="mt-3 rounded-3xl bg-tertiary-container p-4 text-sm text-on-tertiary-container">
+          <p className="font-semibold">Prima collega un'AI</p>
+          <p className="mt-1">Per fare domande serve la tua chiave API (di Anthropic, OpenAI, Google o altro). Costa poco e resta solo sul tuo dispositivo.</p>
+          <Link href="/impostazioni" className="btn btn-filled btn-sm mt-3">Vai alle Impostazioni</Link>
+        </div>
+      )}
       <div className={`mt-3 overflow-y-auto ${fill ? "min-h-0 flex-1" : ""}`} style={fill ? undefined : { maxHeight }}>
         {msgs.length === 0 && (
           <div className="rounded-3xl bg-surface-high p-4 text-sm text-on-surface-variant">
@@ -81,7 +91,7 @@ export default function Conversazione({ work, current, chunks, maxHeight = "40vh
       <form onSubmit={(e) => { e.preventDefault(); invia(q); }} className="mt-2 flex items-center gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Scrivi una domanda" aria-label="Domanda sul libro" enterKeyHint="send"
           className="min-h-[56px] min-w-0 flex-1 rounded-full border-2 border-transparent bg-surface-highest px-5 text-base text-on-surface placeholder:text-on-surface-variant/70 focus:border-primary focus:outline-none" />
-        <button type="submit" disabled={!q.trim() || busy} aria-label="Invia" className="fab"><Icon name="send" /></button>
+        <button type="submit" disabled={!q.trim() || busy || ready === false} aria-label="Invia" className="fab"><Icon name="send" /></button>
       </form>
     </div>
   );

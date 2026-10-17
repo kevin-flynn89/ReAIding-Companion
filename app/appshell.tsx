@@ -9,6 +9,7 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/libreria", label: "Libreria", icon: "book" },
   { href: "/aggiungi-file", label: "Aggiungi", icon: "add" },
   { href: "/backup", label: "Backup", icon: "backup" },
+  { href: "/impostazioni", label: "Opzioni", icon: "settings" },
 ];
 // Lettore e chat occupano tutto lo schermo: niente barra di navigazione
 const IMMERSIVE = ["/lettore", "/chat"];
