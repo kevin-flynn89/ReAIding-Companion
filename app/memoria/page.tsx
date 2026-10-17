@@ -37,7 +37,7 @@ export default function Memoria() {
     </main>
   );
 
-  const current = work.current;
+  const current = work.maxRead; // limite Spoiler Shield: fin dove hai letto
   const card: Card = buildCard(mem, current); // SOLO capitoli <= capitolo corrente
   const missing = work.chapters.filter((c) => c.n <= current && !mem[c.n]).length;
 
@@ -82,7 +82,7 @@ export default function Memoria() {
         actions={<Link href={`/lettore?id=${work.id}`} aria-label="Torna a leggere" className="icon-btn"><Icon name="book" /></Link>} />
       <p className="banner mt-2 flex items-start gap-3">
         <Icon name="shield" className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-        <span>Sei al capitolo {current} di {work.chapters.length}. La scheda mostra solo ciò che hai letto fino a qui: il resto resta nascosto.</span>
+        <span>Hai letto fino al capitolo {current} di {work.chapters.length}. La scheda mostra solo ciò che hai letto fino a qui: il resto resta nascosto.</span>
       </p>
 
       <div className="mt-4 space-y-3">
