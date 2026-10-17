@@ -49,7 +49,8 @@ export async function importBackup(file: File): Promise<ImportResult> {
     if (old) {
       // il libro c'è già: non lo riscrivo, tengo il progresso più avanzato e unisco le chat
       const cur = Math.max(old.current, w.current || 1);
-      if (cur !== old.current) await setProgress(w.id, cur);
+      const mx = Math.max(old.maxRead, w.maxRead || 0, cur);
+      if (cur !== old.current || mx !== old.maxRead) await setProgress(w.id, cur, mx);
       const mine = await loadChat(w.id);
       const seen = new Set(mine.map((m) => `${m.ts}|${m.role}`));
       const extra = (Array.isArray(b.chat) ? b.chat : []).filter((m) => m && !seen.has(`${m.ts}|${m.role}`));
