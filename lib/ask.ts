@@ -1,4 +1,5 @@
 import { API_URL } from "./config";
+import { addUsage, looksLikeQuotaError, markExhausted, COST_ASK } from "./quota";
 import { applyShield, type Chunk } from "./rag";
 
 export type Passage = { chapter: number; text: string };
@@ -30,6 +31,8 @@ export async function askAI(
     }),
   });
   const d = await r.json().catch(() => ({}));
-  if (d.status === "ok") return d.answer as string;
-  throw new Error(d.message || "Errore di comunicazione con il backend.");
+  if (d.status === "ok") { addUsage(COST_ASK); return d.answer as string; }
+  const msg = d.message || "Errore di comunicazione con il backend.";
+  if (looksLikeQuotaError(msg)) markExhausted();
+  throw new Error(msg);
 }

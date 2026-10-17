@@ -1,4 +1,5 @@
 import { get, set, del } from "idb-keyval";
+import { addUsage, looksLikeQuotaError, markExhausted, COST_EXTRACT } from "./quota";
 import { API_URL } from "./config";
 import type { Work } from "./library";
 
@@ -32,7 +33,12 @@ async function callExtract(title: string, chapter: number, current: number, text
     body: JSON.stringify({ title, chapter, current, text }),
   });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok || d.status !== "ok") throw new Error(d.message || "L'AI non ha risposto.");
+  if (!r.ok || d.status !== "ok") {
+    const msg = d.message || "L'AI non ha risposto.";
+    if (looksLikeQuotaError(msg)) markExhausted();
+    throw new Error(msg);
+  }
+  addUsage(COST_EXTRACT);
   return d.data as Omit<ChapterMem, "n">;
 }
 
