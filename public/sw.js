@@ -1,8 +1,8 @@
 // Service worker di reAIding companion: permette l'uso offline di lettore e libreria.
 // Non tocca mai le chiamate al Worker, ai modelli o a siti esterni.
-const CACHE = "rc-v3";
+const CACHE = "rc-v4";
 const SCOPE = self.registration.scope; // finisce con "/"
-const SHELL = ["", "libreria/", "lettore/", "chat/", "memoria/", "backup/", "domande/", "aggiungi-file/", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"]
+const SHELL = ["", "libreria/", "lettore/", "chat/", "memoria/", "backup/", "impostazioni/", "domande/", "aggiungi-file/", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png"]
   .map((p) => new URL(p, SCOPE).href);
 
 self.addEventListener("install", (e) => {
