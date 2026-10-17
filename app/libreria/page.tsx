@@ -10,7 +10,11 @@ export default function Libreria() {
   const refresh = () => listBooks().then(setWorks);
   useEffect(() => { refresh(); }, []);
 
-  async function setCurrent(w: BookMeta, n: number) { await setProgress(w.id, n); refresh(); }
+  async function setRead(w: BookMeta, n: number) {
+    if (n > w.maxRead + 1 && !window.confirm(`Segni come letti i capitoli fino al ${n}.\n\nL'AI potrà usare e rivelarti tutto ciò che succede fino a lì. Confermi?`)) { refresh(); return; }
+    await setProgress(w.id, n, n); // imposta insieme segnalibro e limite dello Shield
+    refresh();
+  }
   async function elimina(w: BookMeta) {
     if (window.confirm(`Eliminare "${w.title}" dalla libreria?`)) { await removeWork(w.id); refresh(); }
   }
@@ -28,7 +32,7 @@ export default function Libreria() {
       )}
       <ul className="mt-2 grid gap-4 md:grid-cols-2">
         {works?.map((w) => {
-          const read = Math.min(w.current, w.chapterCount);
+          const read = Math.min(w.maxRead, w.chapterCount);
           return (
             <li key={w.id} className="card flex flex-col gap-4">
               <div className="flex gap-4">
@@ -49,8 +53,8 @@ export default function Libreria() {
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-outline-variant pt-3">
                 <label className="flex items-center gap-2 text-sm">
-                  <span className="text-on-surface-variant">Sono al cap.</span>
-                  <select value={w.current} onChange={(e) => setCurrent(w, Number(e.target.value))} className="select min-h-[40px] py-1">
+                  <span className="text-on-surface-variant">Ho letto fino al cap.</span>
+                  <select value={Math.min(w.maxRead, w.chapterCount)} onChange={(e) => setRead(w, Number(e.target.value))} className="select min-h-[40px] py-1">
                     {Array.from({ length: w.chapterCount }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
                   </select>
                 </label>
