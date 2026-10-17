@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getLastOpened, listBooks, type BookMeta } from "@/lib/library";
 import Cover from "./copertina";
 import { InstallButton } from "./pwa";
-import { Blob, Empty, Icon, ShapeBg, TopBar, Wavy } from "./ui";
+import { Blob, Empty, Icon, ShapeBg, TopBar, Wavy, Wordmark } from "./ui";
 
 const saluto = () => { const h = new Date().getHours(); return h < 6 ? "Buona notte" : h < 13 ? "Buongiorno" : h < 19 ? "Buon pomeriggio" : "Buonasera"; };
 
@@ -19,7 +19,7 @@ export default function Home() {
 
   return (
     <main>
-      <TopBar title="Reading AI" sub={`${saluto()}! Leggi, e chiedi senza spoiler.`} />
+      <TopBar title={<Wordmark />} sub={`${saluto()}! Leggi, e chiedi senza spoiler.`} />
 
       {works === null && <p className="mt-6 text-sm text-on-surface-variant">Caricamento...</p>}
 

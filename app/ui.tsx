@@ -99,9 +99,14 @@ export function QuotaChip({ className = "" }: { className?: string }) {
   );
 }
 
+// Nome dell'app: "AI" in evidenza
+export function Wordmark({ className = "" }: { className?: string }) {
+  return <span className={className}>re<span className="text-primary">AI</span>ding</span>;
+}
+
 // Barra in alto. Con "back": barra compatta che resta visibile. Senza "back": titolo grande (Expressive "large app bar")
 export function TopBar({ title, sub, back, backLabel = "Indietro", actions }: {
-  title: string; sub?: string; back?: string; backLabel?: string; actions?: ReactNode;
+  title: ReactNode; sub?: string; back?: string; backLabel?: string; actions?: ReactNode;
 }) {
   if (!back) {
     return (

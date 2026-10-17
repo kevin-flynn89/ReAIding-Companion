@@ -6,14 +6,14 @@ import AppShell from "./appshell";
 const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = {
-  title: "AI Reading Companion",
+  title: "reAIding companion",
   description: "Il compagno di lettura AI che non fa spoiler.",
   manifest: `${base}/manifest.webmanifest`,
   icons: {
     icon: [{ url: `${base}/icon.svg`, type: "image/svg+xml" }, { url: `${base}/icon-192.png`, sizes: "192x192", type: "image/png" }],
     apple: `${base}/apple-touch-icon.png`,
   },
-  appleWebApp: { capable: true, title: "Reading AI", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "reAIding", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
