@@ -29,7 +29,7 @@ export default function AggiungiFile() {
 
   async function salva() {
     if (!p) return;
-    await saveWork({ id: crypto.randomUUID(), title: p.title, author: p.author, kind: "libro", cover: p.cover, chapters: p.chapters, current: 1, createdAt: Date.now() });
+    await saveWork({ id: crypto.randomUUID(), title: p.title, author: p.author, kind: "libro", cover: p.cover, chapters: p.chapters, current: 1, maxRead: 1, createdAt: Date.now() });
     setSaved(true);
   }
 
