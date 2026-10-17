@@ -11,7 +11,7 @@ type BackupHead = { app: "ai-reading-companion"; version: 1; exportedAt: number;
 export function backupName() {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
-  return `reading-companion-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
+  return `reaiding-companion-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
 }
 
 export async function makeBackup(ids: string[]): Promise<Blob> {
@@ -38,7 +38,7 @@ export async function importBackup(file: File): Promise<ImportResult> {
   let data: any;
   try { data = JSON.parse(await file.text()); } catch { throw new Error("Il file non è leggibile: non sembra un backup."); }
   if (data?.head?.app !== "ai-reading-companion" || !Array.isArray(data.books)) {
-    throw new Error("Questo file non è un backup di AI Reading Companion.");
+    throw new Error("Questo file non è un backup di reAIding companion.");
   }
   const existing = await listBooks();
   const res: ImportResult = { added: 0, updated: 0, skipped: 0 };
