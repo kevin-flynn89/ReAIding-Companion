@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getWork, type Work } from "@/lib/library";
-import { Empty, Icon, TopBar, QuotaChip } from "../ui";
+import { Empty, Icon, TopBar, AiChip } from "../ui";
 import { buildCard, buildMemory, clearMem, loadMem, type Card, type Item, type MemStore } from "@/lib/memory";
 
 type Tab = "personaggi" | "luoghi" | "oggetti" | "misteri" | "eventi";
@@ -94,7 +94,7 @@ export default function Memoria() {
           <button onClick={() => { stop.current = true; }} className="btn btn-outlined w-full">Ferma</button>
         )}
         {busy && <div className="progress" aria-hidden><span className="animate-pulse" style={{ width: "100%" }} /></div>}
-        <QuotaChip />
+        <AiChip />
         {status && <p role="status" className="text-sm text-on-surface-variant">{status}</p>}
         {error && <p role="alert" className="banner-error">{error}</p>}
       </div>
