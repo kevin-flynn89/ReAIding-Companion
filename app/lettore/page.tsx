@@ -48,7 +48,7 @@ export default function Lettore() {
 
   const total = work.chapters.length;
   return (
-    <main className={open ? "pb-[26rem]" : "pb-36"}>
+    <main className={open ? "pb-[28rem]" : "pb-40"}>
       <TopBar title={work.title} sub={`Capitolo ${n} di ${total}`} back="/libreria" backLabel="Libreria"
         actions={<>
           <button onClick={() => resize(-2)} disabled={size <= 14} aria-label="Testo più piccolo" className="icon-btn text-sm font-semibold">A−</button>
@@ -64,7 +64,7 @@ export default function Lettore() {
         </div>
       )}
       <article className="mx-auto mt-8 max-w-[68ch]">
-        <h2 className="font-serif text-[1.65rem] font-semibold leading-tight">{chapter.title}</h2>
+        <h2 className="font-serif text-[1.9rem] font-bold leading-tight">{chapter.title}</h2>
         <div className="mt-5 font-serif" style={{ fontSize: size, lineHeight: 1.75 }}>
           {chapter.text.split(/\n+/).map((p, i) => <p key={i} className="mb-[1.1em]">{p}</p>)}
         </div>
@@ -76,23 +76,23 @@ export default function Lettore() {
 
       <div className="fixed inset-x-0 bottom-0 z-40">
         {open && (
-          <section aria-label="Chiedi all'AI" className="mx-auto max-w-3xl rounded-t-[28px] bg-surface-container px-4 pb-2 pt-3 shadow-[0_-4px_16px_rgb(0_0_0/0.15)] md:px-6">
+          <section aria-label="Chiedi all'AI" className="mx-3 mb-2 max-w-3xl rounded-[32px] bg-surface-container px-4 pb-3 pt-3 shadow-[0_6px_28px_rgb(0_0_0/0.25)] md:mx-auto md:px-6">
             <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-outline-variant" aria-hidden />
             <div className="flex items-center justify-between">
-              <h3 className="font-sans text-base font-semibold">Chiedi all'AI</h3>
+              <h3 className="font-sans text-lg font-bold">Chiedi all'AI</h3>
               <button onClick={() => setOpen(false)} aria-label="Chiudi" className="icon-btn"><Icon name="close" /></button>
             </div>
             <Conversazione work={work} current={maxRead} chunks={chunks} maxHeight="34dvh" />
           </section>
         )}
-        <div className="border-t border-outline-variant bg-surface-container pb-[env(safe-area-inset-bottom)]">
-          <div className="mx-auto flex max-w-3xl items-center gap-1 px-2 py-2 md:px-6">
+        <div className="px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="float-bar mx-auto flex max-w-3xl items-center gap-1 px-2 py-2">
             <button onClick={() => go(n - 1)} disabled={n <= 1} aria-label="Capitolo precedente" className="icon-btn"><Icon name="prev" /></button>
-            <select value={n} onChange={(e) => go(Number(e.target.value))} aria-label="Vai al capitolo" className="select min-w-0 flex-1 text-sm">
+            <select value={n} onChange={(e) => go(Number(e.target.value))} aria-label="Vai al capitolo" className="select min-w-0 flex-1 rounded-full border-transparent bg-surface-lowest/60 text-sm font-medium">
               {work.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}. {c.title.slice(0, 32)}</option>)}
             </select>
             <button onClick={() => go(n + 1)} disabled={n >= total} aria-label="Capitolo successivo" className="icon-btn"><Icon name="next" /></button>
-            <button onClick={() => setOpen(!open)} aria-expanded={open} className="btn btn-filled ml-1 min-h-[48px] px-4"><Icon name="chat" className="h-5 w-5" /><span className="hidden sm:inline">{open ? "Chiudi" : "Chiedi all'AI"}</span></button>
+            <button onClick={() => setOpen(!open)} aria-expanded={open} className="btn btn-filled ml-1 min-h-[52px] px-5"><Icon name="chat" className="h-5 w-5" /><span className="hidden sm:inline">{open ? "Chiudi" : "Chiedi all'AI"}</span></button>
           </div>
         </div>
       </div>
