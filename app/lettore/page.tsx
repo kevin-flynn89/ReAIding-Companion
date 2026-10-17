@@ -10,6 +10,7 @@ export default function Lettore() {
   const [work, setWork] = useState<Work | null>(null);
   const [state, setState] = useState<"loading" | "missing" | "ok">("loading");
   const [n, setN] = useState(1);
+  const [maxRead, setMaxRead] = useState(1); // limite Spoiler Shield
   const [size, setSize] = useState(18);
   const [open, setOpen] = useState(false);
 
@@ -17,7 +18,7 @@ export default function Lettore() {
     const id = new URLSearchParams(window.location.search).get("id");
     getWork(id).then((w) => {
       if (!w) { setState("missing"); return; }
-      setWork(w); setN(Math.min(Math.max(w.current, 1), w.chapters.length)); setState("ok"); setLastOpened(w.id);
+      setWork(w); setMaxRead(w.maxRead); setN(Math.min(Math.max(w.current, 1), w.chapters.length)); setState("ok"); setLastOpened(w.id);
     });
     try { const s = Number(localStorage.getItem("rc_font")); if (s >= 14 && s <= 30) setSize(s); } catch { /* ignora */ }
   }, []);
@@ -27,7 +28,9 @@ export default function Lettore() {
 
   function go(next: number) {
     if (!work || next < 1 || next > work.chapters.length) return;
+    if (next > maxRead + 1 && !window.confirm(`Stai saltando avanti al capitolo ${next}.\n\nLo Spoiler Shield considererà letti tutti i capitoli fino al ${next}: l'AI potrà rivelarti ciò che succede fino a lì.\n\nVuoi continuare?`)) return;
     setN(next); setProgress(work.id, next);
+    setMaxRead(Math.max(maxRead, next));
     window.scrollTo(0, 0);
   }
   function resize(d: number) {
@@ -54,6 +57,12 @@ export default function Lettore() {
         </>} />
       <div className="progress -mx-4 rounded-none md:-mx-8" role="progressbar" aria-label="Avanzamento nel libro" aria-valuenow={n} aria-valuemin={1} aria-valuemax={total}><span style={{ width: `${(n / total) * 100}%` }} /></div>
 
+      {n < maxRead && (
+        <div className="banner mx-auto mt-4 flex max-w-[68ch] items-center justify-between gap-3 text-sm">
+          <span className="flex items-center gap-2"><Icon name="shield" className="h-4 w-4 shrink-0" />Stai rileggendo: l'AI conosce il libro fino al capitolo {maxRead}.</span>
+          <button onClick={() => go(maxRead)} className="btn btn-text btn-sm shrink-0">Vai al {maxRead}</button>
+        </div>
+      )}
       <article className="mx-auto mt-8 max-w-[68ch]">
         <h2 className="font-serif text-[1.65rem] font-semibold leading-tight">{chapter.title}</h2>
         <div className="mt-5 font-serif" style={{ fontSize: size, lineHeight: 1.75 }}>
@@ -73,7 +82,7 @@ export default function Lettore() {
               <h3 className="font-sans text-base font-semibold">Chiedi all'AI</h3>
               <button onClick={() => setOpen(false)} aria-label="Chiudi" className="icon-btn"><Icon name="close" /></button>
             </div>
-            <Conversazione work={work} current={n} chunks={chunks} maxHeight="34dvh" />
+            <Conversazione work={work} current={maxRead} chunks={chunks} maxHeight="34dvh" />
           </section>
         )}
         <div className="border-t border-outline-variant bg-surface-container pb-[env(safe-area-inset-bottom)]">
