@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "AI Reading Companion",
-  "short_name": "Reading AI",
+  "name": "reAIding companion",
+  "short_name": "reAIding",
   "description": "Il compagno di lettura AI che non fa spoiler.",
   "lang": "it",
   "start_url": "./",
