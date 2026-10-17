@@ -22,7 +22,7 @@ export default function Domande() {
   const stop = useRef(false);
 
   useEffect(() => {
-    listBooks().then((w) => { setWorks(w); if (w[0]) { setId(w[0].id); setCurrent(w[0].current); } });
+    listBooks().then((w) => { setWorks(w); if (w[0]) { setId(w[0].id); setCurrent(w[0].maxRead); } });
   }, []);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function Domande() {
       {work && (
         <>
           <label className="mt-4 block text-sm font-medium">Libro<br />
-            <select value={id} onChange={(e) => { const w = works.find((x) => x.id === e.target.value)!; setId(w.id); setCurrent(w.current); }}
+            <select value={id} onChange={(e) => { const w = works.find((x) => x.id === e.target.value)!; setId(w.id); setCurrent(w.maxRead); }}
               className="select mt-1 w-full">{works.map((w) => <option key={w.id} value={w.id}>{w.title.slice(0, 40)}</option>)}</select>
           </label>
           <label className="mt-3 block text-sm font-medium">Sono arrivato al capitolo<br />
