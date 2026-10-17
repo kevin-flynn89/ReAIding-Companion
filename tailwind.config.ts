@@ -5,6 +5,13 @@ export default {
     extend: {
       colors: {
     "surface": "rgb(var(--c-surface) / <alpha-value>)",
+    "surface-lowest": "rgb(var(--c-surface-lowest) / <alpha-value>)",
+    "surface-low": "rgb(var(--c-surface-low) / <alpha-value>)",
+    "surface-highest": "rgb(var(--c-surface-highest) / <alpha-value>)",
+    "secondary": "rgb(var(--c-secondary) / <alpha-value>)",
+    "on-tertiary": "rgb(var(--c-on-tertiary) / <alpha-value>)",
+    "inverse-surface": "rgb(var(--c-inverse-surface) / <alpha-value>)",
+    "inverse-on-surface": "rgb(var(--c-inverse-on-surface) / <alpha-value>)",
     "surface-container": "rgb(var(--c-surface-container) / <alpha-value>)",
     "surface-high": "rgb(var(--c-surface-high) / <alpha-value>)",
     "on-surface": "rgb(var(--c-on-surface) / <alpha-value>)",
