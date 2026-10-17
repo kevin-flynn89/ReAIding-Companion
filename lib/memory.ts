@@ -1,6 +1,6 @@
 import { get, set, del } from "idb-keyval";
-import { addUsage, looksLikeQuotaError, markExhausted, COST_EXTRACT } from "./quota";
-import { API_URL } from "./config";
+import { AiError, chat } from "./llm";
+import { EXTRACT_SYSTEM, cleanExtracted, parseLoose } from "./prompts";
 import type { Work } from "./library";
 
 // Memoria narrativa: una "scheda" per ogni capitolo analizzato, salvata sul dispositivo.
@@ -28,18 +28,27 @@ export function pieces(text: string): string[] {
 }
 
 async function callExtract(title: string, chapter: number, current: number, text: string) {
-  const r = await fetch(`${API_URL}/extract`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, chapter, current, text }),
-  });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok || d.status !== "ok") {
-    const msg = d.message || "L'AI non ha risposto.";
-    if (looksLikeQuotaError(msg)) markExhausted();
-    throw new Error(msg);
+  // Spoiler Shield: mai analizzare un capitolo oltre quello a cui è arrivato il lettore
+  if (chapter > current) throw new Error("Capitolo oltre quello corrente.");
+  if (text.length < 50) throw new Error("Brano troppo corto.");
+  let lastErr = "";
+  // Prima il modello economico; se la scheda non è leggibile, quello principale
+  for (const cheap of [true, false]) {
+    try {
+      const resp = await chat({
+        system: EXTRACT_SYSTEM(title.slice(0, 120)),
+        messages: [{ role: "user", content: `BRANO (capitolo ${chapter}):\n${text.slice(0, 7000)}` }],
+        maxTokens: 1400, temperature: 0.1, cheap,
+      });
+      const d = parseLoose(resp);
+      if (d && typeof d === "object") return cleanExtracted(d) as Omit<ChapterMem, "n">;
+      lastErr = "risposta non leggibile: " + resp.slice(0, 120);
+    } catch (e: any) {
+      if (e instanceof AiError && e.kind !== "other") throw e; // chiave, credito, modello, rete: inutile riprovare
+      lastErr = String(e?.message || e).slice(0, 200);
+    }
   }
-  addUsage(COST_EXTRACT);
-  return d.data as Omit<ChapterMem, "n">;
+  throw new Error(`L'AI non ha restituito una scheda leggibile. (dettaglio: ${lastErr})`);
 }
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, "").trim();
