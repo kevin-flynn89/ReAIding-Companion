@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listBooks, removeWork, setProgress, type BookMeta } from "@/lib/library";
 import Cover from "../copertina";
-import { Empty, Icon, TopBar } from "../ui";
+import { Empty, Icon, TopBar, Wavy } from "../ui";
 
 export default function Libreria() {
   const [works, setWorks] = useState<BookMeta[] | null>(null);
@@ -22,7 +22,7 @@ export default function Libreria() {
   return (
     <main>
       <TopBar title="Libreria" sub={works ? `${works.length} ${works.length === 1 ? "libro" : "libri"} su questo dispositivo` : undefined}
-        actions={<Link href="/aggiungi-file" aria-label="Aggiungi un libro" className="icon-btn text-primary"><Icon name="add" /></Link>} />
+        actions={<Link href="/aggiungi-file" aria-label="Aggiungi un libro" className="fab bg-tertiary-container text-on-tertiary-container"><Icon name="add" /></Link>} />
       {works === null && <p className="mt-6 text-sm text-on-surface-variant">Caricamento...</p>}
       {works?.length === 0 && (
         <Empty icon="book" title="Nessun libro">
@@ -30,7 +30,7 @@ export default function Libreria() {
           <Link href="/aggiungi-file" className="btn btn-filled mt-6"><Icon name="add" className="h-5 w-5" />Aggiungi un libro</Link>
         </Empty>
       )}
-      <ul className="mt-2 grid gap-4 md:grid-cols-2">
+      <ul className="stagger mt-2 grid gap-4 md:grid-cols-2">
         {works?.map((w) => {
           const read = Math.min(w.maxRead, w.chapterCount);
           return (
@@ -38,17 +38,17 @@ export default function Libreria() {
               <div className="flex gap-4">
                 <Cover work={w} ribbon={w.current > 1} className="h-36 w-24" />
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <h2 className="font-serif text-lg font-semibold leading-snug">{w.title}</h2>
+                  <h2 className="font-serif text-xl font-bold leading-snug">{w.title}</h2>
                   <p className="truncate text-sm text-on-surface-variant">{w.author || "Autore non indicato"}</p>
                   <div className="mt-auto pt-3">
-                    <p className="text-xs text-on-surface-variant">Capitolo {w.current} di {w.chapterCount}</p>
-                    <div className="progress mt-1.5"><span style={{ width: `${Math.round((w.current / Math.max(1, w.chapterCount)) * 100)}%` }} /></div>
+                    <p className="text-xs font-semibold text-on-surface-variant">Capitolo {w.current} di {w.chapterCount}</p>
+                    <div className="mt-1"><Wavy value={w.current} max={w.chapterCount} /></div>
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Link href={`/lettore?id=${w.id}`} className="btn btn-filled btn-sm col-span-2">{w.current > 1 ? "Continua" : "Inizia"}</Link>
-                <Link href={`/chat?id=${w.id}`} className="btn btn-tonal btn-sm px-3"><Icon name="chat" className="h-4 w-4" />Chiedi all'AI</Link>
+                <Link href={`/lettore?id=${w.id}`} className="btn btn-filled col-span-2">{w.current > 1 ? "Continua" : "Inizia"}</Link>
+                <Link href={`/chat?id=${w.id}`} className="btn btn-tonal btn-sm px-3 text-[13px]"><Icon name="chat" className="h-4 w-4" />Chiedi all'AI</Link>
                 <Link href={`/memoria?id=${w.id}`} className="btn btn-outlined btn-sm px-3"><Icon name="bulb" className="h-4 w-4" />Memoria</Link>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-outline-variant pt-3">
