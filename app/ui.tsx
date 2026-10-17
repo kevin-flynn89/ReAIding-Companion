@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useQuota } from "@/lib/quota";
 
 // Icone semplici in stile Material (24x24)
 const P = {
@@ -27,15 +28,97 @@ export function Icon({ name, className = "h-6 w-6" }: { name: IconName; classNam
   return <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor"><path d={P[name]} /></svg>;
 }
 
-// Barra in alto (Material "small top app bar"): resta visibile mentre scorri
+// Forme "Expressive": biscotto, fiore, quadrifoglio... servono da sfondo alle icone e per decorare
+function polar(n: number, amp: number, rot = 0): string {
+  const pts: string[] = [];
+  const steps = 160;
+  for (let i = 0; i < steps; i++) {
+    const t = (i / steps) * Math.PI * 2;
+    const r = 0.92 * (1 + amp * Math.cos(n * t + rot)) / (1 + amp);
+    pts.push(`${(50 + 50 * r * Math.cos(t)).toFixed(2)} ${(50 + 50 * r * Math.sin(t)).toFixed(2)}`);
+  }
+  return `M${pts.join("L")}Z`;
+}
+const SHAPES = {
+  cookie: polar(9, 0.07),
+  flower: polar(6, 0.13),
+  clover: polar(4, 0.16, Math.PI / 4),
+  burst: polar(12, 0.08),
+  soft: polar(4, 0.07),
+} as const;
+export type ShapeName = keyof typeof SHAPES;
+const TONES = {
+  primary: { fill: "text-primary-container", ink: "text-on-primary-container" },
+  tertiary: { fill: "text-tertiary-container", ink: "text-on-tertiary-container" },
+  secondary: { fill: "text-secondary-container", ink: "text-on-secondary-container" },
+  solid: { fill: "text-primary", ink: "text-on-primary" },
+} as const;
+
+export function ShapeBg({ shape = "cookie", className = "" }: { shape?: ShapeName; className?: string }) {
+  return <svg viewBox="0 0 100 100" aria-hidden="true" className={className} fill="currentColor"><path d={SHAPES[shape]} /></svg>;
+}
+// Icona dentro una forma colorata
+export function Blob({ icon, shape = "cookie", tone = "primary", className = "h-14 w-14", iconClass = "h-7 w-7" }: {
+  icon: IconName; shape?: ShapeName; tone?: keyof typeof TONES; className?: string; iconClass?: string;
+}) {
+  const t = TONES[tone];
+  return (
+    <span className={`relative inline-flex shrink-0 items-center justify-center ${className}`}>
+      <ShapeBg shape={shape} className={`absolute inset-0 h-full w-full ${t.fill}`} />
+      <Icon name={icon} className={`relative ${iconClass} ${t.ink}`} />
+    </span>
+  );
+}
+
+// Indicatore di caricamento: una forma che ruota e "respira"
+export function Loader({ label }: { label?: string }) {
+  return (
+    <span role="status" className="inline-flex items-center gap-3 text-sm text-on-surface-variant">
+      <ShapeBg shape="cookie" className="loader h-7 w-7 text-primary" />
+      {label}
+    </span>
+  );
+}
+
+// Barra di avanzamento ondulata
+export function Wavy({ value, max, label = "Avanzamento" }: { value: number; max: number; label?: string }) {
+  const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, max)) * 100)));
+  return <div className="wavy" role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={1} aria-valuemax={max}><span style={{ width: `${Math.max(pct, 6)}%` }} /></div>;
+}
+
+// "Domande rimaste oggi" (stima locale della quota gratuita)
+export function QuotaChip({ className = "" }: { className?: string }) {
+  const left = useQuota();
+  const low = left <= 10;
+  return (
+    <span title="Stima: la quota gratuita si azzera a mezzanotte UTC (circa le 2:00 in Italia)"
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${low ? "bg-error-container text-on-error-container" : "bg-tertiary-container text-on-tertiary-container"} ${className}`}>
+      <Icon name="spark" className="h-3.5 w-3.5" />
+      {left === 0 ? "Domande finite per oggi" : `~${left} domande rimaste oggi`}
+    </span>
+  );
+}
+
+// Barra in alto. Con "back": barra compatta che resta visibile. Senza "back": titolo grande (Expressive "large app bar")
 export function TopBar({ title, sub, back, backLabel = "Indietro", actions }: {
   title: string; sub?: string; back?: string; backLabel?: string; actions?: ReactNode;
 }) {
+  if (!back) {
+    return (
+      <header className="flex items-start gap-2 px-1 pb-4 pt-8 md:pt-10">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[2.6rem] font-bold leading-[1.05] tracking-tight md:text-5xl">{title}</h1>
+          {sub && <p className="mt-2 text-base text-on-surface-variant">{sub}</p>}
+        </div>
+        {actions}
+      </header>
+    );
+  }
   return (
-    <header className="sticky top-0 z-20 -mx-4 flex min-h-16 items-center gap-1 bg-surface/95 px-2 backdrop-blur md:-mx-8 md:px-6">
-      {back && <Link href={back} aria-label={backLabel} className="icon-btn text-on-surface"><Icon name="back" /></Link>}
-      <div className={`min-w-0 flex-1 ${back ? "px-1" : "px-2"}`}>
-        <h1 className="truncate text-[22px] font-semibold leading-7">{title}</h1>
+    <header className="sticky top-0 z-20 -mx-4 flex min-h-16 items-center gap-1 bg-surface/90 px-2 backdrop-blur-md md:-mx-8 md:px-6">
+      <Link href={back} aria-label={backLabel} className="icon-btn text-on-surface"><Icon name="back" /></Link>
+      <div className="min-w-0 flex-1 px-1">
+        <h1 className="truncate text-[22px] font-bold leading-7">{title}</h1>
         {sub && <p className="truncate text-xs text-on-surface-variant">{sub}</p>}
       </div>
       {actions}
@@ -47,9 +130,9 @@ export function TopBar({ title, sub, back, backLabel = "Indietro", actions }: {
 export function Empty({ icon = "book", title, children }: { icon?: IconName; title: string; children?: ReactNode }) {
   return (
     <div className="mx-auto mt-10 flex max-w-sm flex-col items-center text-center">
-      <span className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-container text-on-primary-container"><Icon name={icon} className="h-10 w-10" /></span>
-      <h2 className="mt-5 text-2xl font-semibold">{title}</h2>
-      <div className="mt-2 text-sm text-on-surface-variant">{children}</div>
+      <Blob icon={icon} shape="flower" className="h-32 w-32" iconClass="h-12 w-12" />
+      <h2 className="mt-6 text-3xl font-bold leading-tight">{title}</h2>
+      <div className="mt-3 text-base text-on-surface-variant">{children}</div>
     </div>
   );
 }
