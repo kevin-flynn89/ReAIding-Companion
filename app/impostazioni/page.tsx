@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { DEFAULT_CHEAP, DEFAULT_MODEL, PROVIDERS, clearKeys, loadConfig, profileOf, saveConfig, useUsage, type AiConfig, type Profile, type Provider } from "@/lib/aiconfig";
-import { chat, listModels } from "@/lib/llm";
+import { PROVIDERS, clearKeys, loadConfig, profileOf, saveConfig, useUsage, type AiConfig, type Profile, type Provider } from "@/lib/aiconfig";
+import { chat, forgetAutoModels, listModels, resolveModels } from "@/lib/llm";
 import { Icon, TopBar } from "../ui";
 
 export default function Impostazioni() {
@@ -29,10 +29,16 @@ export default function Impostazioni() {
     setCfg(next); saveConfig(next); setDraft(profileOf(next, p)); setModels([]); setMsg(null); setShow(false);
   }
   async function prova() {
-    setBusy("test"); setMsg(null); persist();
+    setBusy("test"); setMsg(null); persist(); forgetAutoModels();
     try {
       const r = await chat({ system: "Rispondi in italiano con una sola parola.", messages: [{ role: "user", content: "Scrivi: pronto" }], maxTokens: 20 });
-      setMsg({ ok: true, text: `Funziona! L'AI ha risposto: "${r.slice(0, 60)}". Ora puoi leggere e fare domande.` });
+      const d = draft!;
+      let which = "";
+      if (provider !== "custom" && (!d.model.trim() || !d.cheapModel.trim())) {
+        const a = await resolveModels(provider, d.apiKey, d.baseUrl);
+        which = ` Modelli scelti in automatico: ${d.model.trim() ? "" : `risposte → ${a.main}`}${!d.model.trim() && !d.cheapModel.trim() ? ", " : ""}${d.cheapModel.trim() ? "" : `memoria → ${a.cheap}`}.`;
+      }
+      setMsg({ ok: true, text: `Funziona! L'AI ha risposto: "${r.slice(0, 60)}".${which} Ora puoi leggere e fare domande.` });
     } catch (e: any) { setMsg({ ok: false, text: e?.message || "Errore sconosciuto." }); }
     setBusy("");
   }
@@ -85,12 +91,13 @@ export default function Impostazioni() {
           </span>
         </label>
         <label className="block text-sm"><span className="font-semibold">Modello per le risposte</span>
-          <input value={draft.model} onChange={(e) => set({ model: e.target.value })} list="modelli" placeholder={DEFAULT_MODEL[provider] || "nome del modello"} autoCapitalize="none" autoCorrect="off" spellCheck={false} className="field mt-1" />
+          <span className="mt-0.5 block text-xs text-on-surface-variant">{provider === "custom" ? "Scrivi il nome del modello del tuo provider." : "Lascia vuoto: l'app sceglie da sola il modello più adatto e recente. Scrivi un nome solo se vuoi forzarne uno."}</span>
+          <input value={draft.model} onChange={(e) => set({ model: e.target.value })} list="modelli" placeholder={provider === "custom" ? "nome del modello" : "Automatico (consigliato)"} autoCapitalize="none" autoCorrect="off" spellCheck={false} className="field mt-1" />
         </label>
         <details className="text-sm">
           <summary className="cursor-pointer font-semibold text-primary">Avanzate: modello economico per la memoria</summary>
-          <label className="mt-3 block"><span className="text-on-surface-variant">Per analizzare i capitoli conviene un modello più piccolo e meno caro. Se lo lasci vuoto si usa quello delle risposte.</span>
-            <input value={draft.cheapModel} onChange={(e) => set({ cheapModel: e.target.value })} list="modelli" placeholder={DEFAULT_CHEAP[provider] || "(come le risposte)"} autoCapitalize="none" autoCorrect="off" spellCheck={false} className="field mt-2" />
+          <label className="mt-3 block"><span className="text-on-surface-variant">Per analizzare i capitoli conviene un modello più piccolo e meno caro. Vuoto = scelta automatica del più economico del provider.</span>
+            <input value={draft.cheapModel} onChange={(e) => set({ cheapModel: e.target.value })} list="modelli" placeholder={provider === "custom" ? "(come le risposte)" : "Automatico (consigliato)"} autoCapitalize="none" autoCorrect="off" spellCheck={false} className="field mt-2" />
           </label>
         </details>
         <datalist id="modelli">{models.map((m) => <option key={m} value={m} />)}</datalist>
