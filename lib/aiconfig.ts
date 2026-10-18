@@ -10,15 +10,16 @@ export const PROVIDERS: { id: Provider; label: string; keyUrl: string; keyHelp: 
   { id: "gemini", label: "Google Gemini", keyUrl: "https://aistudio.google.com/apikey", keyHelp: "aistudio.google.com → Get API key" },
   { id: "custom", label: "Altro (compatibile OpenAI)", keyUrl: "", keyHelp: "OpenRouter, Groq, Mistral, un modello locale..." },
 ];
-// Nomi suggeriti: i modelli cambiano spesso. "Aggiorna elenco" nelle Impostazioni chiede al provider quelli disponibili.
-export const DEFAULT_MODEL: Record<Provider, string> = { anthropic: "claude-sonnet-5-5", openai: "gpt-4o-mini", gemini: "gemini-2.5-flash", custom: "" };
-export const DEFAULT_CHEAP: Record<Provider, string> = { anthropic: "claude-haiku-5-5", openai: "gpt-4o-mini", gemini: "gemini-2.5-flash-lite", custom: "" };
+// I nomi dei modelli NON sono scritti qui (invecchiano): se il campo è vuoto l'app sceglie da sola
+// il modello giusto leggendo l'elenco del provider (vedi lib/llm.ts).
+// Questi erano i vecchi suggerimenti salvati nelle versioni precedenti: li trattiamo come "automatico".
+const OLD_DEFAULTS = new Set(["claude-sonnet-5-5", "claude-haiku-5-5", "gpt-4o-mini", "gemini-2.5-flash", "gemini-2.5-flash-lite"]);
 
 export type Profile = { apiKey: string; model: string; cheapModel: string; baseUrl: string };
 export type AiConfig = { provider: Provider; profiles: Partial<Record<Provider, Profile>> };
 
 const KEY = "rc_ai";
-const emptyProfile = (p: Provider): Profile => ({ apiKey: "", model: DEFAULT_MODEL[p], cheapModel: DEFAULT_CHEAP[p], baseUrl: "" });
+const emptyProfile = (): Profile => ({ apiKey: "", model: "", cheapModel: "", baseUrl: "" });
 
 export function loadConfig(): AiConfig {
   try {
@@ -32,7 +33,10 @@ export function saveConfig(c: AiConfig) {
   if (typeof window !== "undefined") window.dispatchEvent(new Event("rc-ai"));
 }
 export function profileOf(c: AiConfig, p: Provider = c.provider): Profile {
-  return { ...emptyProfile(p), ...(c.profiles[p] || {}) };
+  const x = { ...emptyProfile(), ...(c.profiles[p] || {}) };
+  if (OLD_DEFAULTS.has(x.model)) x.model = "";
+  if (OLD_DEFAULTS.has(x.cheapModel)) x.cheapModel = "";
+  return x;
 }
 export const activeProfile = () => { const c = loadConfig(); return { provider: c.provider, ...profileOf(c) }; };
 export function hasKey(): boolean {
