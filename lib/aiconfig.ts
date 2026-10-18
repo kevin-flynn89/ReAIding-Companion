@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 // Impostazioni dell'AI scelta dall'utente. La chiave resta SOLO su questo dispositivo (localStorage):
 // non entra nei backup e non viene mai inviata a nessuno tranne al provider scelto.
 export type Provider = "anthropic" | "openai" | "gemini" | "custom";
-export const PROVIDERS: { id: Provider; label: string; keyUrl: string; keyHelp: string }[] = [
-  { id: "anthropic", label: "Anthropic (Claude)", keyUrl: "https://console.anthropic.com/settings/keys", keyHelp: "console.anthropic.com → API Keys" },
-  { id: "openai", label: "OpenAI", keyUrl: "https://platform.openai.com/api-keys", keyHelp: "platform.openai.com → API keys" },
-  { id: "gemini", label: "Google Gemini", keyUrl: "https://aistudio.google.com/apikey", keyHelp: "aistudio.google.com → Get API key" },
-  { id: "custom", label: "Altro (compatibile OpenAI)", keyUrl: "", keyHelp: "OpenRouter, Groq, Mistral, un modello locale..." },
+export const PROVIDERS: { id: Provider; label: string; keyUrl: string; keyHelp: string; modelsUrl: string }[] = [
+  { id: "anthropic", label: "Anthropic (Claude)", keyUrl: "https://console.anthropic.com/settings/keys", keyHelp: "console.anthropic.com → API Keys", modelsUrl: "https://docs.claude.com/en/docs/about-claude/models/overview" },
+  { id: "openai", label: "OpenAI", keyUrl: "https://platform.openai.com/api-keys", keyHelp: "platform.openai.com → API keys", modelsUrl: "https://platform.openai.com/docs/models" },
+  { id: "gemini", label: "Google Gemini", keyUrl: "https://aistudio.google.com/apikey", keyHelp: "aistudio.google.com → Get API key", modelsUrl: "https://ai.google.dev/gemini-api/docs/models" },
+  { id: "custom", label: "Altro (compatibile OpenAI)", keyUrl: "", keyHelp: "OpenRouter, Groq, Mistral, un modello locale...", modelsUrl: "" },
 ];
 // I nomi dei modelli NON sono scritti qui (invecchiano): se il campo è vuoto l'app sceglie da sola
 // il modello giusto leggendo l'elenco del provider (vedi lib/llm.ts).
