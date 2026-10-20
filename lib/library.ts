@@ -19,6 +19,7 @@ const book = (id: string) => `book_${id}`;
 const PROG = "rc_progress"; // progressi: file piccolo, così sfogliare le pagine non riscrive tutto il libro
 const MAXK = "rc_max"; // capitolo più avanzato letto per ogni libro (limite Spoiler Shield)
 const LAST = "rc_last";
+const DEL = "rc_deleted"; // libri eliminati (id -> quando): serve alla sincronizzazione per cancellarli anche sugli altri dispositivi
 
 let ready: Promise<void> | null = null;
 function migrate(): Promise<void> {
@@ -80,16 +81,24 @@ export async function getWork(id: string | null): Promise<Work | null> {
   const { chapterCount, ...rest } = meta;
   return { ...rest, chapters };
 }
+// Libri eliminati (per la sincronizzazione con Drive)
+export async function getDeleted(): Promise<Record<string, number>> { return ((await get(DEL)) as Record<string, number>) || {}; }
+export async function setDeleted(d: Record<string, number>) { await set(DEL, d); }
+
 export async function saveWork(w: Work) {
   await migrate();
+  const dl = await getDeleted();
+  if (dl[w.id]) { delete dl[w.id]; await setDeleted(dl); } // un libro riaggiunto di proposito non è più "eliminato"
   await set(book(w.id), w.chapters);
   const { chapters, ...rest } = w;
   const all = (((await get(META)) as BookMeta[]) || []).filter((x) => x.id !== w.id);
   await set(META, [{ ...rest, chapterCount: chapters.length }, ...all]);
   await setProgress(w.id, w.current, Math.max(w.maxRead ?? 0, w.current));
 }
-export async function removeWork(id: string) {
+// track=false: rimozione chiesta dalla sincronizzazione (il segno di eliminazione c'è già)
+export async function removeWork(id: string, track = true) {
   await migrate();
+  if (track) { const dl = await getDeleted(); dl[id] = Date.now(); await setDeleted(dl); }
   await set(META, (((await get(META)) as BookMeta[]) || []).filter((x) => x.id !== id));
   const p = await progress(); delete p[id]; await set(PROG, p);
   const mx = await maxes(); delete mx[id]; await set(MAXK, mx);
@@ -98,4 +107,4 @@ export async function removeWork(id: string) {
   await del(`chat_${id}`);
   await del(`mem_${id}`);
 }
-export async function clearAll() { await del(OLD); await del(META); await del(PROG); await del(MAXK); await del(LAST); }
+export async function clearAll() { await del(OLD); await del(META); await del(PROG); await del(MAXK); await del(LAST); await del(DEL); }
