@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PROVIDERS, clearKeys, loadConfig, profileOf, saveConfig, useUsage, type AiConfig, type Profile, type Provider } from "@/lib/aiconfig";
 import { chat, forgetAutoModels, listModels, pickModels, resolveModels } from "@/lib/llm";
@@ -162,6 +163,11 @@ export default function Impostazioni() {
       </section>
 
       <button onClick={rimuovi} className="btn btn-danger btn-sm mt-6"><Icon name="trash" className="h-4 w-4" />Rimuovi chiave da questo dispositivo</button>
+
+      <p className="mt-8 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <Link href="/privacy" className="font-semibold text-primary underline">Privacy</Link>
+        <Link href="/condizioni" className="font-semibold text-primary underline">Condizioni d'uso</Link>
+      </p>
     </main>
   );
 }
