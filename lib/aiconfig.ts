@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 
 // Impostazioni dell'AI scelta dall'utente. La chiave resta SOLO su questo dispositivo (localStorage):
 // non entra nei backup e non viene mai inviata a nessuno tranne al provider scelto.
-export type Provider = "anthropic" | "openai" | "gemini" | "custom";
+export type Provider = "anthropic" | "openai" | "gemini" | "custom" | "local";
 export const PROVIDERS: { id: Provider; label: string; keyUrl: string; keyHelp: string; modelsUrl: string }[] = [
   { id: "anthropic", label: "Anthropic (Claude)", keyUrl: "https://console.anthropic.com/settings/keys", keyHelp: "console.anthropic.com → API Keys", modelsUrl: "https://docs.claude.com/en/docs/about-claude/models/overview" },
   { id: "openai", label: "OpenAI", keyUrl: "https://platform.openai.com/api-keys", keyHelp: "platform.openai.com → API keys", modelsUrl: "https://platform.openai.com/docs/models" },
   { id: "gemini", label: "Google Gemini", keyUrl: "https://aistudio.google.com/apikey", keyHelp: "aistudio.google.com → Get API key", modelsUrl: "https://ai.google.dev/gemini-api/docs/models" },
+  { id: "local", label: "Sul dispositivo (offline)", keyUrl: "", keyHelp: "Nessuna chiave e nessun costo: un piccolo modello gira sul tuo telefono. Più lento e meno preciso delle AI esterne.", modelsUrl: "" },
   { id: "custom", label: "Altro (compatibile OpenAI)", keyUrl: "", keyHelp: "OpenRouter, Groq, Mistral, un modello locale...", modelsUrl: "" },
 ];
 // I nomi dei modelli NON sono scritti qui (invecchiano): se il campo è vuoto l'app sceglie da sola
@@ -41,6 +42,7 @@ export function profileOf(c: AiConfig, p: Provider = c.provider): Profile {
 export const activeProfile = () => { const c = loadConfig(); return { provider: c.provider, ...profileOf(c) }; };
 export function hasKey(): boolean {
   const a = activeProfile();
+  if (a.provider === "local") { try { return !!a.model && localStorage.getItem("rc_local_ok") === a.model; } catch { return false; } }
   return a.provider === "custom" ? !!a.baseUrl : !!a.apiKey.trim();
 }
 export function clearKeys() { try { localStorage.removeItem(KEY); } catch { /* ignora */ } window.dispatchEvent(new Event("rc-ai")); }

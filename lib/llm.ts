@@ -1,4 +1,5 @@
-import { activeProfile, addUsage, type Provider } from "./aiconfig";
+import { activeProfile, addUsage, hasKey, type Provider } from "./aiconfig";
+import { localChat } from "./localllm";
 
 // Chiamata diretta dal browser al provider scelto dall'utente, con la sua chiave.
 export type ErrKind = "nokey" | "auth" | "quota" | "model" | "network" | "other";
@@ -97,6 +98,10 @@ async function callProvider(a: Active, model: string, o: ChatOpts): Promise<stri
 
 export async function chat(o: ChatOpts): Promise<string> {
   const a = activeProfile();
+  if (a.provider === "local") {
+    if (!hasKey()) throw new AiError("nokey", "Prima scarica un modello: apri Opzioni, scegli \"Sul dispositivo\" e premi \"Scarica e prova\".");
+    return localChat(a.model, o.system, normalize(o.messages), o.maxTokens, o.temperature ?? 0.2);
+  }
   if (a.provider === "custom" ? !a.baseUrl : !a.apiKey.trim()) throw new AiError("nokey", "Prima collega un'AI: apri Opzioni e inserisci la tua chiave.");
   const typed = ((o.cheap && a.cheapModel.trim()) || (!o.cheap || a.provider === "custom" ? a.model.trim() : "") || "").trim();
   if (typed) return callProvider(a, typed, o); // nome scritto da te: lo uso così com'è

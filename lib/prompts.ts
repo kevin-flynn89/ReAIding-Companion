@@ -13,24 +13,29 @@ REGOLE:
 5. Può esserci una conversazione precedente: serve a capire a cosa si riferisce la domanda (per esempio "lui", "e dopo?"). Per i fatti usa i passaggi forniti e quanto già detto nella conversazione.
 6. Possono esserci APPUNTI DELLA SCHEDA: sintesi di capitoli già letti create da un'AI. Usali per completare la risposta, ma se contraddicono i passaggi, valgono i passaggi.`;
 
-export function buildAsk(title: string, current: number, question: string, passages: Passage[], history: HistoryItem[], notes: Note[]) {
+// "lim": limiti più stretti per i modelli sul dispositivo (contesto di soli 4096 token)
+export type AskLimits = { pass: number; chars: number; total: number; notes: number; hist: number };
+export const DEFAULT_LIMITS: AskLimits = { pass: 14, chars: 1200, total: 14000, notes: 16, hist: 6 };
+export const LOCAL_LIMITS: AskLimits = { pass: 4, chars: 700, total: 2800, notes: 5, hist: 2 };
+
+export function buildAsk(title: string, current: number, question: string, passages: Passage[], history: HistoryItem[], notes: Note[], lim: AskLimits = DEFAULT_LIMITS) {
   // Barriere Spoiler Shield: nulla oltre il capitolo corrente
   if (passages.some((p) => !(p.chapter <= current)) || history.some((m) => !(m.chapter <= current)) || notes.some((n) => !(n.chapter <= current))) {
     throw new Error("Contenuto oltre il capitolo corrente: richiesta bloccata dallo Spoiler Shield.");
   }
   const q = question.slice(0, 500).trim();
-  const pass = passages.slice(0, 14);
-  const nts = notes.slice(0, 16);
+  const pass = passages.slice(0, lim.pass);
+  const nts = notes.slice(0, lim.notes);
   const noteText = nts.length ? "APPUNTI DELLA SCHEDA:\n" + nts.map((n) => `- (cap. ${n.chapter}) ${n.text.slice(0, 300)}`).join("\n") + "\n\n" : "";
   let used = 0;
   const context = pass.map((p, i) => {
-    const t = p.text.slice(0, 1200); used += t.length;
-    return used > 14000 ? "" : `[Passaggio ${i + 1} - capitolo ${p.chapter}]\n${t}`;
+    const t = p.text.slice(0, lim.chars); used += t.length;
+    return used > lim.total ? "" : `[Passaggio ${i + 1} - capitolo ${p.chapter}]\n${t}`;
   }).filter(Boolean).join("\n\n");
   return {
     system: ASK_SYSTEM(title.slice(0, 120), current),
     messages: [
-      ...history.slice(-6).map((m) => ({ role: m.role, content: m.content.slice(0, 900) })),
+      ...history.slice(-lim.hist).map((m) => ({ role: m.role, content: m.content.slice(0, 600) })),
       { role: "user" as const, content: `${noteText}PASSAGGI:\n${context || "(nessuno)"}\n\nDOMANDA: ${q}` },
     ],
   };

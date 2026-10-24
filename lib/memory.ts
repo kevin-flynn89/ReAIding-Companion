@@ -2,6 +2,7 @@ import { get, set, del } from "idb-keyval";
 import { AiError, chat } from "./llm";
 import { EXTRACT_SYSTEM, cleanExtracted, parseLoose } from "./prompts";
 import type { Work } from "./library";
+import { activeProfile } from "./aiconfig";
 
 // Memoria narrativa: una "scheda" per ogni capitolo analizzato, salvata sul dispositivo.
 // SPOILER SHIELD: si analizzano solo capitoli <= capitolo corrente, e quando si mostra la scheda
@@ -31,6 +32,7 @@ async function callExtract(title: string, chapter: number, current: number, text
   // Spoiler Shield: mai analizzare un capitolo oltre quello a cui è arrivato il lettore
   if (chapter > current) throw new Error("Capitolo oltre quello corrente.");
   if (text.length < 50) throw new Error("Brano troppo corto.");
+  if (activeProfile().provider === "local") throw new AiError("model", "La memoria narrativa richiede un'AI esterna (Anthropic, OpenAI, Gemini...): i modelli sul dispositivo sono troppo piccoli per costruirla in modo affidabile. Le domande in chat funzionano comunque, anche usando la memoria già costruita.");
   let lastErr = "";
   // Prima il modello economico; se la scheda non è leggibile, quello principale
   for (const cheap of [true, false]) {
