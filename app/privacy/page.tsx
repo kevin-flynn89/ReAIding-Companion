@@ -13,7 +13,7 @@ export default function Privacy() {
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>I tuoi libri, le chat e la memoria restano sul tuo dispositivo.</li>
             <li>{who[0].toUpperCase() + who.slice(1)} non ha un server: non riceve né conserva nessun tuo dato.</li>
-            <li>L'AI funziona con la chiave che inserisci tu: i passaggi del libro vanno direttamente dal tuo dispositivo al provider che hai scelto.</li>
+            <li>L'AI funziona con la chiave che inserisci tu: i passaggi del libro vanno direttamente dal tuo dispositivo al provider che hai scelto. In alternativa puoi usare un piccolo modello scaricato sul telefono: in quel caso il testo non esce dal dispositivo.</li>
             <li>La sincronizzazione con Google Drive è facoltativa e usa solo una cartella nascosta del tuo Drive.</li>
             <li>Nessuna pubblicità, nessun tracciamento, nessuna statistica d'uso.</li>
           </ul>
@@ -33,6 +33,11 @@ export default function Privacy() {
         <section className="card">
           <h2 className="text-lg font-bold">Cosa va al provider AI</h2>
           <p className="mt-2">Quando fai una domanda, crei la memoria o chiedi un riassunto, l'app invia al provider che hai scelto (Anthropic, OpenAI, Google Gemini o un servizio compatibile) la tua domanda, brevi passaggi del libro fino al capitolo che hai letto e le ultime battute della chat. L'invio parte dal tuo dispositivo con la tua chiave, senza passare da noi. Da quel momento valgono le regole e l'informativa del provider: leggile sul suo sito, perché possono prevedere conservazione dei dati o uso per migliorare i servizi. I costi, se ci sono, sono tra te e il provider.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">AI sul dispositivo (facoltativa)</h2>
+          <p className="mt-2">Se scegli "Sul dispositivo" nelle Opzioni, l'app scarica un piccolo modello di linguaggio (da huggingface.co, più un file di funzionamento da raw.githubusercontent.com) e lo salva nella memoria del browser. Dopo il download le domande vengono elaborate sul tuo telefono: il testo del libro e le tue domande non vengono inviati a nessuno. Puoi eliminare il modello in qualsiasi momento dalle Opzioni. Hugging Face e GitHub possono registrare dati tecnici di connessione (come l'indirizzo IP) al momento del download, secondo le proprie informative.</p>
         </section>
 
         <section className="card">
