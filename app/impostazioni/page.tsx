@@ -84,7 +84,7 @@ export default function Impostazioni() {
           {PROVIDERS.map((p) => <button key={p.id} role="tab" aria-selected={provider === p.id} onClick={() => pick(p.id)} className="chip">{p.label}</button>)}
         </div>
         <p className="mt-3 text-sm text-on-surface-variant">
-          {info.keyUrl ? <>Crea la chiave qui: <a href={info.keyUrl} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">{info.keyHelp}</a>. Di solito serve aggiungere un po' di credito (alcuni provider offrono un uso gratuito limitato: controlla le loro condizioni).</> : info.keyHelp}
+          {info.keyUrl ? <>Crea la chiave qui: <a href={info.keyUrl} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">{info.keyHelp}</a>.</> : info.keyHelp}
         </p>
       </section>
 
