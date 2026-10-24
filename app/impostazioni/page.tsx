@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PROVIDERS, clearKeys, loadConfig, profileOf, saveConfig, useUsage, type AiConfig, type Profile, type Provider } from "@/lib/aiconfig";
 import { chat, forgetAutoModels, listModels, pickModels, resolveModels } from "@/lib/llm";
 import { Icon, TopBar } from "../ui";
+import Locale from "./locale";
 
 export default function Impostazioni() {
   const [cfg, setCfg] = useState<AiConfig | null>(null);
@@ -87,6 +88,9 @@ export default function Impostazioni() {
         </p>
       </section>
 
+      {provider === "local" ? (
+        <Locale model={draft.model} onModel={(id) => { const d = { ...draft, model: id }; setDraft(d); const next: AiConfig = { provider, profiles: { ...cfg.profiles, [provider]: d } }; setCfg(next); saveConfig(next); }} />
+      ) : (
       <section className="card mt-4 space-y-4">
         <h2 className="text-lg font-bold">2. Inserisci chiave e modello</h2>
         {provider === "custom" && (
@@ -156,11 +160,12 @@ export default function Impostazioni() {
         {info.modelsUrl && <p className="text-xs text-on-surface-variant">Elenco ufficiale e descrizioni dei modelli: <a href={info.modelsUrl} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">pagina dei modelli di {info.label.split(" ")[0]}</a>.</p>}
         {msg && <p role="status" className={msg.ok ? "banner" : "banner-error"}>{msg.text}</p>}
       </section>
+      )}
 
-      <section className="card mt-4">
+      {provider !== "local" && (      <section className="card mt-4">
         <h2 className="text-lg font-bold">Uso di oggi</h2>
         <p className="mt-1 text-sm text-on-surface-variant">Su questo dispositivo: {usage.inT.toLocaleString("it-IT")} token inviati, {usage.outT.toLocaleString("it-IT")} ricevuti. Il costo dipende dal tuo provider e dal modello scelto: controlla il suo pannello per i dati ufficiali.</p>
-      </section>
+      </section>)}
 
       <button onClick={rimuovi} className="btn btn-danger btn-sm mt-6"><Icon name="trash" className="h-4 w-4" />Rimuovi chiave da questo dispositivo</button>
 
