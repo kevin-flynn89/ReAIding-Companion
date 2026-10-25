@@ -170,6 +170,7 @@ export default function Impostazioni() {
       <button onClick={rimuovi} className="btn btn-danger btn-sm mt-6"><Icon name="trash" className="h-4 w-4" />Rimuovi chiave da questo dispositivo</button>
 
       <p className="mt-8 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <Link href="/aiuto" className="font-semibold text-primary underline">Aiuto</Link>
         <Link href="/privacy" className="font-semibold text-primary underline">Privacy</Link>
         <Link href="/condizioni" className="font-semibold text-primary underline">Condizioni d'uso</Link>
       </p>
