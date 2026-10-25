@@ -82,7 +82,9 @@ export async function loadModel(base: string, onProgress?: (p: number, text: str
   const cb = (r: { progress: number; text: string }) => onProgress?.(r.progress, r.text);
   try {
     if (engine) { await engine.unload(); engine = null; engineKey = ""; }
-    engine = await w.CreateMLCEngine(id, { initProgressCallback: cb });
+    // Gemma 4 dichiara una "finestra scorrevole" (512) che confligge con il contesto fisso di 4096: azzero la prima.
+    const chatOpts = base.startsWith("gemma-4") ? { sliding_window_size: -1, context_window_size: 4096 } : undefined;
+    engine = await w.CreateMLCEngine(id, { initProgressCallback: cb }, chatOpts);
     engineKey = id;
     return engine;
   } catch (e: any) {
