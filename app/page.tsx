@@ -26,7 +26,7 @@ export default function Home() {
       {ready === false && (
         <Link href="/impostazioni" className="card card-lift mb-4 flex items-center gap-4 bg-tertiary-container text-on-tertiary-container">
           <Blob icon="spark" shape="burst" tone="solid" className="h-14 w-14" />
-          <span><span className="block text-lg font-bold">Collega la tua AI</span><span className="block text-sm">Inserisci la tua chiave API per fare domande e creare la memoria.</span></span>
+          <span><span className="block text-lg font-bold">Collega la tua AI</span><span className="block text-sm">Usa la tua chiave oppure scarica un modello sul telefono, per fare domande.</span></span>
         </Link>
       )}
 
@@ -35,6 +35,11 @@ export default function Home() {
       {works !== null && !cont && (
         <Empty icon="book" title="La tua libreria è vuota">
           <p>Aggiungi un libro EPUB o MOBI senza protezione DRM. Resta sul tuo dispositivo.</p>
+          <ol className="mt-5 space-y-2 text-left text-sm">
+            <li className="flex gap-3"><span className="font-bold text-primary">1.</span><span>Aggiungi il tuo primo libro.</span></li>
+            <li className="flex gap-3"><span className="font-bold text-primary">2.</span><span>Collega un'AI in Opzioni: la tua chiave oppure un modello sul telefono.</span></li>
+            <li className="flex gap-3"><span className="font-bold text-primary">3.</span><span>Leggi e chiedi: l'AI non ti fa spoiler.</span></li>
+          </ol>
           <Link href="/aggiungi-file" className="btn btn-filled mt-6"><Icon name="add" className="h-5 w-5" />Aggiungi un libro</Link>
         </Empty>
       )}
@@ -93,7 +98,7 @@ export default function Home() {
       )}
 
       <InstallButton />
-      <p className="mt-8 text-center text-xs text-on-surface-variant"><Link href="/domande" className="underline">Prova le domande</Link> (strumento di test)</p>
+      <p className="mt-8 text-center text-sm"><Link href="/aiuto" className="font-semibold text-primary underline">Come funziona? Aiuto</Link></p>
     </main>
   );
 }
