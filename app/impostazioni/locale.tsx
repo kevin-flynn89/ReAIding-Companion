@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Icon } from "../ui";
-import { LOCAL_MODELS, downloadAndTest, isDownloaded, localReadyFor, localSupport, recommendedModel, removeModel, type Support } from "@/lib/localllm";
+import { LOCAL_MODELS, cleanLegacy, downloadAndTest, isDownloaded, localReadyFor, localSupport, recommendedModel, removeModel, type Support } from "@/lib/localllm";
 
 // Sezione "AI sul dispositivo": scelta del modello, download con avanzamento, prova ed eliminazione.
 export default function Locale({ model, onModel }: { model: string; onModel: (id: string) => void }) {
@@ -17,7 +17,7 @@ export default function Locale({ model, onModel }: { model: string; onModel: (id
     for (const m of LOCAL_MODELS) h[m.id] = await isDownloaded(m.id);
     setHave(h);
   };
-  useEffect(() => { localSupport().then(setSup); refresh(); }, []);
+  useEffect(() => { localSupport().then(setSup); cleanLegacy().then(refresh); }, []);
   useEffect(() => { setReady(localReadyFor(model)); }, [model, busy]);
 
   const rec = recommendedModel(sup?.memGB ?? null);
