@@ -14,17 +14,24 @@ export type LocalModel = {
 // id = nome "base"; la versione q4f16 o q4f32 si sceglie in base a quello che la GPU del telefono supporta.
 // I pesi dei download sono stime (tranne Gemma 3 1B, riportato da fonti): il numero esatto lo vedi durante il download.
 export const LOCAL_MODELS: LocalModel[] = [
-  { id: "gemma3-1b-it", label: "Gemma 3 1B", level: "Base", langs: "Italiano e inglese tra 140+ lingue dichiarate", download: "circa 560 MB", gpu: "circa 0,7 GB", vramMB: 711, f32: false,
-    note: "Il più leggero. Dichiarato multilingue, ma a questa dimensione le risposte restano semplici e a volte imprecise." },
+  { id: "Llama-3.2-1B-Instruct", label: "Llama 3.2 1B", level: "Base", langs: "Italiano e inglese tra le lingue ufficiali di Meta", download: "circa 700 MB (stima)", gpu: "circa 0,9 GB", vramMB: 879, f32: true,
+    note: "Il più leggero. A questa dimensione le risposte restano semplici e a volte imprecise." },
   { id: "Qwen3-1.7B", label: "Qwen3 1,7B", level: "Medio", langs: "Italiano e inglese tra 100+ lingue dichiarate", download: "circa 1 GB (stima)", gpu: "circa 2 GB", vramMB: 2037, f32: true,
     note: "Buon compromesso per telefoni con 8 GB o più." },
   { id: "Llama-3.2-3B-Instruct", label: "Llama 3.2 3B", level: "Medio-alto", langs: "Italiano e inglese tra le lingue ufficiali di Meta", download: "circa 1,8 GB (stima)", gpu: "circa 2,3 GB", vramMB: 2264, f32: true,
     note: "Più preciso, ma più lento. Per telefoni potenti (di solito 12 GB di RAM o più)." },
-  { id: "gemma-4-E2B-it", label: "Gemma 4 E2B", level: "Top", langs: "Italiano e inglese tra le oltre 35 lingue supportate da Google", download: "circa 2-3 GB (stima)", gpu: "circa 3,4 GB", vramMB: 3387, f32: true,
+  { id: "Qwen3-4B", label: "Qwen3 4B", level: "Top", langs: "Italiano e inglese tra 100+ lingue dichiarate", download: "circa 2,3 GB (stima)", gpu: "circa 3,4 GB", vramMB: 3432, f32: true,
     note: "Il più capace tra quelli disponibili, ma anche il più pesante e lento: solo per telefoni di fascia alta." },
 ];
-// Modelli presenti nelle versioni precedenti dell'app, ora tolti dall'elenco
-export const LEGACY_MODELS = ["SmolLM2-360M-Instruct", "Qwen3-0.6B", "Qwen2.5-1.5B-Instruct"];
+// Modelli presenti nelle versioni precedenti dell'app, ora tolti dall'elenco (Gemma non funziona ancora con WebLLM)
+export const LEGACY_MODELS = ["SmolLM2-360M-Instruct", "Qwen3-0.6B", "Qwen2.5-1.5B-Instruct", "gemma3-1b-it", "gemma-4-E2B-it"];
+// Libera lo spazio occupato dai modelli tolti (se erano stati scaricati)
+export async function cleanLegacy(): Promise<void> {
+  try {
+    const w = await webllm();
+    for (const id of LEGACY_MODELS) for (const f16 of [true, false]) { try { await w.deleteModelAllInfoInCache(fullId(id, f16)); } catch { /* ignora */ } }
+  } catch { /* ignora */ }
+}
 
 export type Support = { webgpu: boolean; f16: boolean; memGB: number | null };
 
@@ -42,7 +49,7 @@ export async function localSupport(): Promise<Support> {
 // Il browser arrotonda la RAM a una potenza di 2 e di solito non supera 8: il suggerimento è prudente.
 // Llama 3.2 3B e Gemma 4 E2B non vengono mai suggeriti in automatico: la RAM reale oltre 8 GB non è rilevabile.
 export function recommendedModel(memGB: number | null): string {
-  return memGB !== null && memGB >= 8 ? "Qwen3-1.7B" : "gemma3-1b-it";
+  return memGB !== null && memGB >= 8 ? "Qwen3-1.7B" : "Llama-3.2-1B-Instruct";
 }
 
 const fullId = (base: string, f16: boolean) => `${base}-${f16 ? "q4f16_1" : "q4f32_1"}-MLC`;
@@ -82,7 +89,7 @@ export async function loadModel(base: string, onProgress?: (p: number, text: str
   const cb = (r: { progress: number; text: string }) => onProgress?.(r.progress, r.text);
   try {
     if (engine) { await engine.unload(); engine = null; engineKey = ""; }
-    // Gemma (3 e 4) dichiara una "finestra scorrevole" che confligge con il contesto fisso di 4096: la azzero per tutti i modelli.
+    // Contesto fisso di 4096, senza finestra scorrevole.
     const chatOpts = { sliding_window_size: -1, context_window_size: 4096 };
     engine = await w.CreateMLCEngine(id, { initProgressCallback: cb }, chatOpts);
     engineKey = id;
