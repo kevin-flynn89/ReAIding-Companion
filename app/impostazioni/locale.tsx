@@ -23,14 +23,25 @@ export default function Locale({ model, onModel }: { model: string; onModel: (id
   const rec = recommendedModel(sup?.memGB ?? null);
   const chosen = LOCAL_MODELS.some((m) => m.id === model) ? model : rec;
 
+  // Tiene lo schermo acceso solo durante il download (si riattiva se torni sull'app)
+  async function tieniAcceso(): Promise<() => void> {
+    let lock: any = null; let attivo = true;
+    const chiedi = async () => { try { if (attivo && document.visibilityState === "visible") lock = await (navigator as any).wakeLock?.request("screen"); } catch { /* non supportato o negato */ } };
+    const onVis = () => { if (document.visibilityState === "visible") chiedi(); };
+    document.addEventListener("visibilitychange", onVis);
+    await chiedi();
+    return () => { attivo = false; document.removeEventListener("visibilitychange", onVis); try { lock?.release(); } catch { /* ignora */ } };
+  }
+
   async function scarica() {
+    const rilascia = await tieniAcceso();
     setBusy(true); setMsg(null); setProg({ p: 0, text: "Preparo il download..." });
     onModel(chosen);
     try {
       const r = await downloadAndTest(chosen, (p, text) => setProg({ p, text }));
       setMsg({ ok: true, text: `Funziona! Il modello ha risposto: "${r.slice(0, 60)}". Ora puoi fare domande dal lettore e dalla chat.` });
     } catch (e: any) { setMsg({ ok: false, text: e?.message || "Errore sconosciuto." }); }
-    setProg(null); setBusy(false); refresh();
+    rilascia(); setProg(null); setBusy(false); refresh();
   }
   async function elimina() {
     if (!window.confirm("Eliminare il modello scaricato da questo dispositivo? Libererai spazio, ma per usarlo dovrai riscaricarlo.")) return;
@@ -41,7 +52,7 @@ export default function Locale({ model, onModel }: { model: string; onModel: (id
   return (
     <section className="card mt-4 space-y-4">
       <h2 className="text-lg font-bold">2. Scegli il modello sul dispositivo</h2>
-      <p className="text-sm text-on-surface-variant">Il modello si scarica una volta (meglio con il Wi‑Fi) e poi funziona senza chiave e senza costi. I testi dei libri non lasciano il telefono. Risponde più lentamente e con meno precisione delle AI esterne: è un'opzione "base".</p>
+      <p className="text-sm text-on-surface-variant">Il modello si scarica una volta (meglio con il Wi‑Fi, tenendo l'app aperta: lo schermo resta acceso durante il download) e poi funziona senza chiave e senza costi. I testi dei libri non lasciano il telefono. Risponde più lentamente e con meno precisione delle AI esterne: è un'opzione "base".</p>
 
       {sup && !sup.webgpu && <p role="status" className="banner-error">Questo browser non supporta WebGPU, necessario per l'AI sul dispositivo. Prova con Chrome aggiornato (versione 121 o successiva su Android) oppure usa una chiave AI.</p>}
       {sup && sup.webgpu && (
