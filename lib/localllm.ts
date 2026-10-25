@@ -82,8 +82,8 @@ export async function loadModel(base: string, onProgress?: (p: number, text: str
   const cb = (r: { progress: number; text: string }) => onProgress?.(r.progress, r.text);
   try {
     if (engine) { await engine.unload(); engine = null; engineKey = ""; }
-    // Gemma 4 dichiara una "finestra scorrevole" (512) che confligge con il contesto fisso di 4096: azzero la prima.
-    const chatOpts = base.startsWith("gemma-4") ? { sliding_window_size: -1, context_window_size: 4096 } : undefined;
+    // Gemma (3 e 4) dichiara una "finestra scorrevole" che confligge con il contesto fisso di 4096: la azzero per tutti i modelli.
+    const chatOpts = { sliding_window_size: -1, context_window_size: 4096 };
     engine = await w.CreateMLCEngine(id, { initProgressCallback: cb }, chatOpts);
     engineKey = id;
     return engine;
