@@ -3,13 +3,28 @@
 // Il modello viene scaricato da huggingface.co e un file di runtime da raw.githubusercontent.com (mlc-ai); poi resta nella cache del browser.
 import type { MLCEngine } from "@mlc-ai/web-llm";
 
-export type LocalModel = { id: string; label: string; download: string; gpu: string; note: string; vramMB: number };
-// id = nome "base"; la versione q4f16 o q4f32 si sceglie in base a quello che la GPU del telefono supporta
+export type LocalModel = {
+  id: string; label: string; level: "Base" | "Medio" | "Medio-alto" | "Top";
+  langs: string;      // lingue dichiarate dal produttore
+  download: string;   // peso approssimativo del download
+  gpu: string; vramMB: number; // memoria della scheda grafica richiesta (dato di WebLLM)
+  f32: boolean;       // esiste anche la versione per schede senza "shader-f16"
+  note: string;
+};
+// id = nome "base"; la versione q4f16 o q4f32 si sceglie in base a quello che la GPU del telefono supporta.
+// I pesi dei download sono stime (tranne Gemma 3 1B, riportato da fonti): il numero esatto lo vedi durante il download.
 export const LOCAL_MODELS: LocalModel[] = [
-  { id: "SmolLM2-360M-Instruct", label: "SmolLM2 360M", download: "circa 200 MB", gpu: "circa 0,4 GB", vramMB: 376, note: "Il più leggero e veloce, ma anche il meno preciso. Va bene per telefoni con poca memoria." },
-  { id: "Qwen3-0.6B", label: "Qwen3 0,6B", download: "circa 350 MB", gpu: "circa 1,4 GB", vramMB: 1403, note: "Via di mezzo: più capace del 360M, serve un telefono con 8 GB o più." },
-  { id: "Qwen2.5-1.5B-Instruct", label: "Qwen2.5 1,5B", download: "circa 1 GB", gpu: "circa 1,6 GB", vramMB: 1630, note: "Il più capace dei tre e il più lento. Solo per telefoni potenti." },
+  { id: "gemma3-1b-it", label: "Gemma 3 1B", level: "Base", langs: "Italiano e inglese tra 140+ lingue dichiarate", download: "circa 560 MB", gpu: "circa 0,7 GB", vramMB: 711, f32: false,
+    note: "Il più leggero. Dichiarato multilingue, ma a questa dimensione le risposte restano semplici e a volte imprecise." },
+  { id: "Qwen3-1.7B", label: "Qwen3 1,7B", level: "Medio", langs: "Italiano e inglese tra 100+ lingue dichiarate", download: "circa 1 GB (stima)", gpu: "circa 2 GB", vramMB: 2037, f32: true,
+    note: "Buon compromesso per telefoni con 8 GB o più." },
+  { id: "Llama-3.2-3B-Instruct", label: "Llama 3.2 3B", level: "Medio-alto", langs: "Italiano e inglese tra le lingue ufficiali di Meta", download: "circa 1,8 GB (stima)", gpu: "circa 2,3 GB", vramMB: 2264, f32: true,
+    note: "Più preciso, ma più lento. Per telefoni potenti (di solito 12 GB di RAM o più)." },
+  { id: "gemma-4-E2B-it", label: "Gemma 4 E2B", level: "Top", langs: "Italiano e inglese tra le oltre 35 lingue supportate da Google", download: "circa 2-3 GB (stima)", gpu: "circa 3,4 GB", vramMB: 3387, f32: true,
+    note: "Il più capace tra quelli disponibili, ma anche il più pesante e lento: solo per telefoni di fascia alta." },
 ];
+// Modelli presenti nelle versioni precedenti dell'app, ora tolti dall'elenco
+export const LEGACY_MODELS = ["SmolLM2-360M-Instruct", "Qwen3-0.6B", "Qwen2.5-1.5B-Instruct"];
 
 export type Support = { webgpu: boolean; f16: boolean; memGB: number | null };
 
@@ -25,16 +40,16 @@ export async function localSupport(): Promise<Support> {
 }
 
 // Il browser arrotonda la RAM a una potenza di 2 e di solito non supera 8: il suggerimento è prudente.
-// Il modello da 1,5B non viene mai suggerito in automatico.
+// Llama 3.2 3B e Gemma 4 E2B non vengono mai suggeriti in automatico: la RAM reale oltre 8 GB non è rilevabile.
 export function recommendedModel(memGB: number | null): string {
-  return memGB !== null && memGB >= 8 ? "Qwen3-0.6B" : "SmolLM2-360M-Instruct";
+  return memGB !== null && memGB >= 8 ? "Qwen3-1.7B" : "gemma3-1b-it";
 }
 
 const fullId = (base: string, f16: boolean) => `${base}-${f16 ? "q4f16_1" : "q4f32_1"}-MLC`;
 
 const OK = "rc_local_ok"; // nome del modello scaricato e provato con successo
 export const localReadyFor = (model: string): boolean => {
-  try { return !!model && localStorage.getItem(OK) === model; } catch { return false; }
+  try { return !!model && LOCAL_MODELS.some((m) => m.id === model) && localStorage.getItem(OK) === model; } catch { return false; }
 };
 function setReady(model: string | null) {
   try { if (model) localStorage.setItem(OK, model); else localStorage.removeItem(OK); } catch { /* ignora */ }
@@ -58,6 +73,8 @@ export async function isDownloaded(base: string): Promise<boolean> {
 export async function loadModel(base: string, onProgress?: (p: number, text: string) => void): Promise<MLCEngine> {
   const sup = await localSupport();
   if (!sup.webgpu) throw new Error("Questo browser non supporta WebGPU, quindi non può far girare l'AI sul dispositivo. Prova con Chrome aggiornato, oppure usa una chiave AI.");
+  const def = LOCAL_MODELS.find((m) => m.id === base);
+  if (def && !sup.f16 && !def.f32) throw new Error(`Questo telefono non supporta il modello ${def.label} (la sua scheda grafica non ha le funzioni necessarie). Prova un altro modello.`);
   const id = fullId(base, sup.f16);
   if (engine && engineKey === id) return engine;
   try { await navigator.storage?.persist?.(); } catch { /* ignora */ }
@@ -81,7 +98,7 @@ export async function removeModel(base: string): Promise<void> {
     const w = await webllm();
     for (const f16 of [true, false]) { try { await w.deleteModelAllInfoInCache(fullId(base, f16)); } catch { /* ignora */ } }
   } catch { /* ignora */ }
-  setReady(null);
+  try { if (localStorage.getItem(OK) === base) setReady(null); } catch { /* ignora */ }
 }
 
 const stripThink = (t: string) => t.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/<think>[\s\S]*$/, "").trim();

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { localReadyFor } from "./localllm";
 
 // Impostazioni dell'AI scelta dall'utente. La chiave resta SOLO su questo dispositivo (localStorage):
 // non entra nei backup e non viene mai inviata a nessuno tranne al provider scelto.
@@ -42,7 +43,7 @@ export function profileOf(c: AiConfig, p: Provider = c.provider): Profile {
 export const activeProfile = () => { const c = loadConfig(); return { provider: c.provider, ...profileOf(c) }; };
 export function hasKey(): boolean {
   const a = activeProfile();
-  if (a.provider === "local") { try { return !!a.model && localStorage.getItem("rc_local_ok") === a.model; } catch { return false; } }
+  if (a.provider === "local") return localReadyFor(a.model);
   return a.provider === "custom" ? !!a.baseUrl : !!a.apiKey.trim();
 }
 export function clearKeys() { try { localStorage.removeItem(KEY); } catch { /* ignora */ } window.dispatchEvent(new Event("rc-ai")); }
