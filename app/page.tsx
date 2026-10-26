@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getLastOpened, listBooks, type BookMeta } from "@/lib/library";
 import Cover from "./copertina";
 import { InstallButton } from "./pwa";
+import Onboarding, { onboardingDone } from "./onboarding";
 import { useAiReady } from "@/lib/aiconfig";
 import { Blob, Empty, Icon, ShapeBg, TopBar, Wavy, Wordmark } from "./ui";
 
@@ -13,14 +14,24 @@ export default function Home() {
   const [works, setWorks] = useState<BookMeta[] | null>(null);
   const [last, setLast] = useState<string | null>(null);
   const ready = useAiReady();
+  const [guida, setGuida] = useState(false);
 
-  useEffect(() => { listBooks().then(setWorks); getLastOpened().then(setLast); }, []);
+  useEffect(() => {
+    getLastOpened().then(setLast);
+    listBooks().then((w) => {
+      setWorks(w);
+      // Guida di benvenuto: primo avvio con libreria vuota, oppure richiesta da Aiuto (?guida=1)
+      const richiesta = new URLSearchParams(window.location.search).get("guida") === "1";
+      if (richiesta || (w.length === 0 && !onboardingDone())) setGuida(true);
+    });
+  }, []);
 
   const cont = works?.find((w) => w.id === last) ?? works?.[0];
   const others = (works || []).filter((w) => w.id !== cont?.id).slice(0, 10);
 
   return (
     <main>
+      {guida && <Onboarding onClose={() => setGuida(false)} />}
       <TopBar title={<Wordmark />} sub={`${saluto()}! Leggi, e chiedi senza spoiler.`} />
 
       {ready === false && (
