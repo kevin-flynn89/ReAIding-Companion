@@ -28,7 +28,8 @@ export default function Aiuto() {
           </details>
         ))}
       </div>
-      <p className="mt-6 text-sm text-on-surface-variant">Non trovi la risposta? Leggi anche <Link href="/privacy" className="font-semibold text-primary underline">Privacy</Link> e <Link href="/condizioni" className="font-semibold text-primary underline">Condizioni d'uso</Link>.</p>
+      <p className="mt-6 text-sm"><Link href="/?guida=1" className="font-semibold text-primary underline">Rivedi la guida di benvenuto</Link></p>
+      <p className="mt-3 text-sm text-on-surface-variant">Non trovi la risposta? Leggi anche <Link href="/privacy" className="font-semibold text-primary underline">Privacy</Link> e <Link href="/condizioni" className="font-semibold text-primary underline">Condizioni d'uso</Link>.</p>
     </main>
   );
 }
