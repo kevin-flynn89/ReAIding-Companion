@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PROVIDERS, loadConfig, useAiReady, useUsage } from "@/lib/aiconfig";
+import { t } from "@/lib/i18n";
 
 // Icone semplici in stile Material (24x24)
 const P = {
@@ -85,7 +86,7 @@ export function Loader({ label }: { label?: string }) {
 }
 
 // Barra di avanzamento ondulata
-export function Wavy({ value, max, label = "Avanzamento" }: { value: number; max: number; label?: string }) {
+export function Wavy({ value, max, label = t("Avanzamento") }: { value: number; max: number; label?: string }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, max)) * 100)));
   return <div className="wavy" role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={1} aria-valuemax={max}><span style={{ width: `${Math.max(pct, 6)}%` }} /></div>;
 }
@@ -96,13 +97,13 @@ export function AiChip({ className = "" }: { className?: string }) {
   const u = useUsage();
   if (ready === null) return null;
   if (!ready) {
-    return <Link href="/impostazioni" className={`inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-xs font-semibold text-on-tertiary-container ${className}`}><Icon name="spark" className="h-3.5 w-3.5" />Collega la tua AI</Link>;
+    return <Link href="/impostazioni" className={`inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-3 py-1 text-xs font-semibold text-on-tertiary-container ${className}`}><Icon name="spark" className="h-3.5 w-3.5" />{t("Collega la tua AI")}</Link>;
   }
   const name = PROVIDERS.find((p) => p.id === loadConfig().provider)?.label.split(" ")[0] || "AI";
   const k = u.inT + u.outT;
   return (
-    <Link href="/impostazioni" title="Token usati oggi su questo dispositivo (stima del provider)" className={`inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container ${className}`}>
-      <Icon name="spark" className="h-3.5 w-3.5" />{name} · {k < 1000 ? k : `${(k / 1000).toFixed(k < 10000 ? 1 : 0)}k`} token oggi
+    <Link href="/impostazioni" title={t("Token usati oggi su questo dispositivo (stima del provider)")} className={`inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container ${className}`}>
+      <Icon name="spark" className="h-3.5 w-3.5" />{name} · {k < 1000 ? k : `${(k / 1000).toFixed(k < 10000 ? 1 : 0)}k`} {t("token oggi")}
     </Link>
   );
 }
@@ -113,7 +114,7 @@ export function Wordmark({ className = "" }: { className?: string }) {
 }
 
 // Barra in alto. Con "back": barra compatta che resta visibile. Senza "back": titolo grande (Expressive "large app bar")
-export function TopBar({ title, sub, back, backLabel = "Indietro", actions }: {
+export function TopBar({ title, sub, back, backLabel = t("Indietro"), actions }: {
   title: ReactNode; sub?: string; back?: string; backLabel?: string; actions?: ReactNode;
 }) {
   if (!back) {

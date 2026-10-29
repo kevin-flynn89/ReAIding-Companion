@@ -7,8 +7,9 @@ import { InstallButton } from "./pwa";
 import Onboarding, { onboardingDone } from "./onboarding";
 import { useAiReady } from "@/lib/aiconfig";
 import { Blob, Empty, Icon, ShapeBg, TopBar, Wavy, Wordmark } from "./ui";
+import { t } from "@/lib/i18n";
 
-const saluto = () => { const h = new Date().getHours(); return h < 6 ? "Buona notte" : h < 13 ? "Buongiorno" : h < 19 ? "Buon pomeriggio" : "Buonasera"; };
+const saluto = () => { const h = new Date().getHours(); return h < 6 ? t("Buona notte") : h < 13 ? t("Buongiorno") : h < 19 ? t("Buon pomeriggio") : t("Buonasera"); };
 
 export default function Home() {
   const [works, setWorks] = useState<BookMeta[] | null>(null);
@@ -32,26 +33,26 @@ export default function Home() {
   return (
     <main>
       {guida && <Onboarding onClose={() => setGuida(false)} />}
-      <TopBar title={<Wordmark />} sub={`${saluto()}! Leggi, e chiedi senza spoiler.`} />
+      <TopBar title={<Wordmark />} sub={`${saluto()}! ${t("Leggi, e chiedi senza spoiler.")}`} />
 
       {ready === false && (
         <Link href="/impostazioni" className="card card-lift mb-4 flex items-center gap-4 bg-tertiary-container text-on-tertiary-container">
           <Blob icon="spark" shape="burst" tone="solid" className="h-14 w-14" />
-          <span><span className="block text-lg font-bold">Collega la tua AI</span><span className="block text-sm">Usa la tua chiave oppure scarica un modello sul telefono, per fare domande.</span></span>
+          <span><span className="block text-lg font-bold">{t("Collega la tua AI")}</span><span className="block text-sm">{t("Usa la tua chiave oppure scarica un modello sul telefono, per fare domande.")}</span></span>
         </Link>
       )}
 
-      {works === null && <p className="mt-6 text-sm text-on-surface-variant">Caricamento...</p>}
+      {works === null && <p className="mt-6 text-sm text-on-surface-variant">{t("Caricamento...")}</p>}
 
       {works !== null && !cont && (
-        <Empty icon="book" title="La tua libreria è vuota">
-          <p>Aggiungi un libro EPUB o MOBI senza protezione DRM. Resta sul tuo dispositivo.</p>
+        <Empty icon="book" title={t("La tua libreria è vuota")}>
+          <p>{t("Aggiungi un libro EPUB o MOBI senza protezione DRM. Resta sul tuo dispositivo.")}</p>
           <ol className="mt-5 space-y-2 text-left text-sm">
-            <li className="flex gap-3"><span className="font-bold text-primary">1.</span><span>Aggiungi il tuo primo libro.</span></li>
-            <li className="flex gap-3"><span className="font-bold text-primary">2.</span><span>Collega un'AI in Opzioni: la tua chiave oppure un modello sul telefono.</span></li>
-            <li className="flex gap-3"><span className="font-bold text-primary">3.</span><span>Leggi e chiedi: l'AI non ti fa spoiler.</span></li>
+            <li className="flex gap-3"><span className="font-bold text-primary">1.</span><span>{t("Aggiungi il tuo primo libro.")}</span></li>
+            <li className="flex gap-3"><span className="font-bold text-primary">2.</span><span>{t("Collega un'AI in Opzioni: la tua chiave oppure un modello sul telefono.")}</span></li>
+            <li className="flex gap-3"><span className="font-bold text-primary">3.</span><span>{t("Leggi e chiedi: l'AI non ti fa spoiler.")}</span></li>
           </ol>
-          <Link href="/aggiungi-file" className="btn btn-filled mt-6"><Icon name="add" className="h-5 w-5" />Aggiungi un libro</Link>
+          <Link href="/aggiungi-file" className="btn btn-filled mt-6"><Icon name="add" className="h-5 w-5" />{t("Aggiungi un libro")}</Link>
         </Empty>
       )}
 
@@ -59,28 +60,28 @@ export default function Home() {
         <section aria-labelledby="cont" className="on-container relative mt-2 overflow-hidden rounded-[40px] bg-primary-container p-6 text-on-primary-container md:p-8">
           <ShapeBg shape="cookie" className="pointer-events-none absolute -right-14 -top-14 h-48 w-48 rotate-12 text-tertiary-container opacity-60 dark:opacity-30" />
           <ShapeBg shape="flower" className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 text-secondary-container opacity-50" />
-          <h2 id="cont" className="relative text-sm font-bold uppercase tracking-wider opacity-80">Continua a leggere</h2>
+          <h2 id="cont" className="relative text-sm font-bold uppercase tracking-wider opacity-80">{t("Continua a leggere")}</h2>
           <div className="relative mt-4 flex gap-5">
             <Cover work={cont} ribbon={cont.current > 1} className="h-44 w-[7.5rem] md:h-52 md:w-36" />
             <div className="flex min-w-0 flex-1 flex-col">
               <p className="font-serif text-[1.7rem] font-bold leading-[1.1]">{cont.title}</p>
-              <p className="mt-1 truncate text-sm opacity-80">{cont.author || "Autore non indicato"}</p>
+              <p className="mt-1 truncate text-sm opacity-80">{cont.author || t("Autore non indicato")}</p>
               <div className="mt-auto pt-4">
-                <p className="mb-1 text-xs font-bold">Capitolo {cont.current} di {cont.chapterCount}</p>
-                <Wavy value={cont.current} max={cont.chapterCount} label="Avanzamento nel libro" />
+                <p className="mb-1 text-xs font-bold">{t("Capitolo {n} di {total}", { n: cont.current, total: cont.chapterCount })}</p>
+                <Wavy value={cont.current} max={cont.chapterCount} label={t("Avanzamento nel libro")} />
               </div>
             </div>
           </div>
           <div className="relative mt-6 flex flex-wrap gap-3">
-            <Link href={`/lettore?id=${cont.id}`} className="btn btn-filled flex-1 whitespace-nowrap px-4 sm:flex-none">{cont.current > 1 ? "Continua" : "Inizia a leggere"}</Link>
-            <Link href={`/chat?id=${cont.id}`} className="btn btn-tonal flex-1 whitespace-nowrap px-4 sm:flex-none"><Icon name="chat" className="h-5 w-5" />Chiedi all'AI</Link>
+            <Link href={`/lettore?id=${cont.id}`} className="btn btn-filled flex-1 whitespace-nowrap px-4 sm:flex-none">{cont.current > 1 ? t("Continua") : t("Inizia a leggere")}</Link>
+            <Link href={`/chat?id=${cont.id}`} className="btn btn-tonal flex-1 whitespace-nowrap px-4 sm:flex-none"><Icon name="chat" className="h-5 w-5" />{t("Chiedi all'AI")}</Link>
           </div>
         </section>
       )}
 
       {others.length > 0 && (
         <section aria-labelledby="altri" className="mt-8">
-          <h2 id="altri" className="px-1 text-xl font-bold">Altri libri</h2>
+          <h2 id="altri" className="px-1 text-xl font-bold">{t("Altri libri")}</h2>
           <ul className="-mx-4 mt-3 flex gap-4 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8">
             {others.map((w) => (
               <li key={w.id} className="w-28 shrink-0">
@@ -99,17 +100,17 @@ export default function Home() {
         <section className="stagger mt-8 grid gap-3 sm:grid-cols-2">
           <Link href={`/memoria?id=${cont.id}`} className="card card-lift flex items-center gap-4 hover:bg-surface-high">
             <Blob icon="bulb" shape="burst" tone="tertiary" className="h-14 w-14" />
-            <span><span className="block text-lg font-bold">Memoria narrativa</span><span className="block text-sm text-on-surface-variant">Personaggi, luoghi e misteri finora</span></span>
+            <span><span className="block text-lg font-bold">{t("Memoria narrativa")}</span><span className="block text-sm text-on-surface-variant">{t("Personaggi, luoghi e misteri finora")}</span></span>
           </Link>
           <Link href="/aggiungi-file" className="card card-lift flex items-center gap-4 hover:bg-surface-high">
             <Blob icon="add" shape="clover" tone="primary" className="h-14 w-14" />
-            <span><span className="block text-lg font-bold">Aggiungi un libro</span><span className="block text-sm text-on-surface-variant">File EPUB o MOBI</span></span>
+            <span><span className="block text-lg font-bold">{t("Aggiungi un libro")}</span><span className="block text-sm text-on-surface-variant">{t("File EPUB o MOBI")}</span></span>
           </Link>
         </section>
       )}
 
       <InstallButton />
-      <p className="mt-8 text-center text-sm"><Link href="/aiuto" className="font-semibold text-primary underline">Come funziona? Aiuto</Link></p>
+      <p className="mt-8 text-center text-sm"><Link href="/aiuto" className="font-semibold text-primary underline">{t("Come funziona? Aiuto")}</Link></p>
     </main>
   );
 }

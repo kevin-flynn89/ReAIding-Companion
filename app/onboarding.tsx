@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Blob, Icon, Wordmark, type IconName, type ShapeName } from "./ui";
+import { t } from "@/lib/i18n";
 
 const KEY = "rc_onboarded";
 export const onboardingDone = () => { try { return localStorage.getItem(KEY) === "1"; } catch { return true; } };
@@ -26,32 +27,32 @@ export default function Onboarding({ onClose }: { onClose: () => void }) {
   if (!ok) return null;
   // Portale su <body>: così sta sopra la barra di navigazione, qualunque sia il contenitore
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label="Benvenuto" className="fixed inset-0 z-[100] flex flex-col overflow-y-auto bg-surface px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+    <div role="dialog" aria-modal="true" aria-label={t("Benvenuto")} className="fixed inset-0 z-[100] flex flex-col overflow-y-auto bg-surface px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
         <div className="flex items-center justify-between">
           <Wordmark />
-          {!last && <button onClick={chiudi} className="btn btn-text btn-sm">Salta</button>}
+          {!last && <button onClick={chiudi} className="btn btn-text btn-sm">{t("Salta")}</button>}
         </div>
         <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
           <Blob icon={s.icon} shape={s.shape} tone="primary" className="h-40 w-40" iconClass="h-16 w-16" />
-          <h1 className="mt-8 font-serif text-3xl font-bold leading-tight" aria-live="polite">{s.title}</h1>
-          <p className="mt-4 text-[17px] leading-relaxed text-on-surface-variant">{s.text}</p>
+          <h1 className="mt-8 font-serif text-3xl font-bold leading-tight" aria-live="polite">{t(s.title)}</h1>
+          <p className="mt-4 text-[17px] leading-relaxed text-on-surface-variant">{t(s.text)}</p>
         </div>
-        <div className="mb-5 flex justify-center gap-2" aria-label={`Schermata ${i + 1} di ${SLIDES.length}`}>
+        <div className="mb-5 flex justify-center gap-2" aria-label={t("Schermata {i} di {n}", { i: i + 1, n: SLIDES.length })}>
           {SLIDES.map((_, k) => <span key={k} className={`h-2.5 rounded-full transition-all ${k === i ? "w-8 bg-primary" : "w-2.5 bg-outline-variant"}`} />)}
         </div>
         {!last ? (
           <div className="flex gap-3">
-            {i > 0 && <button onClick={() => setI(i - 1)} className="btn btn-outlined flex-1"><Icon name="prev" className="h-5 w-5" />Indietro</button>}
-            <button onClick={() => setI(i + 1)} className="btn btn-filled flex-1">Avanti<Icon name="next" className="h-5 w-5" /></button>
+            {i > 0 && <button onClick={() => setI(i - 1)} className="btn btn-outlined flex-1"><Icon name="prev" className="h-5 w-5" />{t("Indietro")}</button>}
+            <button onClick={() => setI(i + 1)} className="btn btn-filled flex-1">{t("Avanti")}<Icon name="next" className="h-5 w-5" /></button>
           </div>
         ) : (
           <div className="grid gap-3">
-            <Link href="/aggiungi-file" onClick={chiudi} className="btn btn-filled"><Icon name="add" className="h-5 w-5" />Aggiungi il primo libro</Link>
-            <Link href="/impostazioni" onClick={chiudi} className="btn btn-tonal"><Icon name="spark" className="h-5 w-5" />Collega un'AI</Link>
+            <Link href="/aggiungi-file" onClick={chiudi} className="btn btn-filled"><Icon name="add" className="h-5 w-5" />{t("Aggiungi il primo libro")}</Link>
+            <Link href="/impostazioni" onClick={chiudi} className="btn btn-tonal"><Icon name="spark" className="h-5 w-5" />{t("Collega un'AI")}</Link>
             <div className="flex gap-3">
-              <button onClick={() => setI(i - 1)} className="btn btn-text flex-1">Indietro</button>
-              <button onClick={chiudi} className="btn btn-text flex-1">Più tardi</button>
+              <button onClick={() => setI(i - 1)} className="btn btn-text flex-1">{t("Indietro")}</button>
+              <button onClick={chiudi} className="btn btn-text flex-1">{t("Più tardi")}</button>
             </div>
           </div>
         )}
