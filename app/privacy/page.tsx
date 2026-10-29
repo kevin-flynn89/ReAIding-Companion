@@ -1,9 +1,11 @@
+"use client";
 import { TopBar } from "../ui";
-import { CONTACT_EMAIL, ISSUES_URL, LEGAL_UPDATED, PUBLISHER } from "@/lib/legal";
+import { getLang } from "@/lib/i18n";
+import { CONTACT_EMAIL, ISSUES_URL, LEGAL_UPDATED, LEGAL_UPDATED_EN, PUBLISHER } from "@/lib/legal";
 
 const who = PUBLISHER || "lo sviluppatore dell'app";
 
-export default function Privacy() {
+function PrivacyIt() {
   return (
     <main>
       <TopBar title="Privacy" sub={`Aggiornata il ${LEGAL_UPDATED}`} back="/impostazioni" backLabel="Torna alle Opzioni" />
@@ -65,3 +67,71 @@ export default function Privacy() {
     </main>
   );
 }
+
+const whoEn = PUBLISHER || "the app developer";
+const link = "font-semibold text-primary underline";
+
+function PrivacyEn() {
+  return (
+    <main>
+      <TopBar title="Privacy" sub={`Updated on ${LEGAL_UPDATED_EN}`} back="/impostazioni" backLabel="Back to Options" />
+      <div className="mt-4 space-y-4 text-[15px] leading-relaxed">
+        <section className="card">
+          <h2 className="text-lg font-bold">In short</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>Your books, chats and memory stay on your device.</li>
+            <li>{whoEn[0].toUpperCase() + whoEn.slice(1)} has no server: it neither receives nor keeps any of your data.</li>
+            <li>The AI works with the key you enter: passages of the book go straight from your device to the provider you chose. Alternatively you can use a small model downloaded to your phone: in that case the text never leaves the device.</li>
+            <li>Syncing with Google Drive is optional and only uses a hidden folder of your Drive.</li>
+            <li>No ads, no tracking, no usage statistics.</li>
+          </ul>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">Who is responsible</h2>
+          <p className="mt-2">reAIding companion is published by {whoEn}. The app is free and runs in your browser. For privacy questions: {CONTACT_EMAIL ? <a className={link} href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> : <>open an issue on <a className={link} href={ISSUES_URL} target="_blank" rel="noreferrer">GitHub</a></>}.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">What stays on your device</h2>
+          <p className="mt-2">In the browser (local storage) the app saves: the books you add (text and cover), the chapter you have reached, conversations, the narrative memory, the search index and settings. The API key of your AI provider is saved only here, never in backups and never on Drive. If you clear the site data from the browser, all of this disappears from that device.</p>
+          <p className="mt-2">The meaning-based search model is downloaded once from Hugging Face and then runs on your device: the text of your books is not sent to it.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">What goes to the AI provider</h2>
+          <p className="mt-2">When you ask a question, build the memory or ask for a summary, the app sends the provider you chose (Anthropic, OpenAI, Google Gemini or a compatible service) your question, short passages of the book up to the chapter you have read, and the latest messages of the chat. The request leaves your device with your key, without going through us. From then on the provider's rules and privacy notice apply: read them on its website, because they may provide for data retention or use to improve services. Costs, if any, are between you and the provider.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">On-device AI (optional)</h2>
+          <p className="mt-2">If you choose "On device" in Options, the app downloads a small language model (from huggingface.co, plus a runtime file from raw.githubusercontent.com) and saves it in the browser's storage. After the download, questions are processed on your phone: the text of the book and your questions are not sent to anyone. You can delete the model at any time from Options. Hugging Face and GitHub may record technical connection data (such as the IP address) at download time, according to their own notices.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">Google Drive (optional)</h2>
+          <p className="mt-2">If you press "Sync now", the app has you sign in with Google and asks for a single permission: to use the app's hidden folder in your Drive. It cannot read or edit your other files, and your other files do not see that folder. Books, chapter, chats and memory are saved there, never the API key. The data stays in your Google Drive and under your control.</p>
+          <p className="mt-2">To stop: "Disconnect Google" in Backup, or revoke the permission at myaccount.google.com, Security section, "Third-party access". To delete the data already saved, go to Drive, Settings, "Manage apps", choose reAIding companion and "Delete hidden app data".</p>
+          <p className="mt-2">The use of data received from Google complies with the Google API Services User Data Policy, including the Limited Use requirements: the data is used only to offer you syncing, and is not sold or used for advertising.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">Site and technical services</h2>
+          <p className="mt-2">The site is hosted on GitHub Pages: like any site, GitHub may record technical connection data (such as the IP address) according to its own notice. The app does not use tracking cookies. Google's sign-in script is loaded only when you use syncing.</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">Your rights</h2>
+          <p className="mt-2">Since the data is yours and stays on your devices or in your Drive, you can view, export (Backup), correct and delete it whenever you want: delete books from the Library, use "Remove key" in Options, or clear the site data from the browser. You also have the rights provided by the GDPR, including the right to lodge a complaint with a data protection supervisory authority (in Italy, the Garante per la protezione dei dati personali).</p>
+        </section>
+
+        <section className="card">
+          <h2 className="text-lg font-bold">Changes</h2>
+          <p className="mt-2">If this notice changes, the date at the top is updated. Important changes will be announced in the app.</p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+export default function Privacy() { return getLang() === "en" ? <PrivacyEn /> : <PrivacyIt />; }
