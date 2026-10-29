@@ -14,7 +14,7 @@ function PrivacyIt() {
           <h2 className="text-lg font-bold">In breve</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>I tuoi libri, le chat e la memoria restano sul tuo dispositivo.</li>
-            <li>{who[0].toUpperCase() + who.slice(1)} non ha un server: non riceve né conserva nessun tuo dato.</li>
+            <li>{PUBLISHER ? who : who[0].toUpperCase() + who.slice(1)} non ha un server: non riceve né conserva nessun tuo dato.</li>
             <li>L'AI funziona con la chiave che inserisci tu: i passaggi del libro vanno direttamente dal tuo dispositivo al provider che hai scelto. In alternativa puoi usare un piccolo modello scaricato sul telefono: in quel caso il testo non esce dal dispositivo.</li>
             <li>La sincronizzazione con Google Drive è facoltativa e usa solo una cartella nascosta del tuo Drive.</li>
             <li>Nessuna pubblicità, nessun tracciamento, nessuna statistica d'uso.</li>
@@ -80,7 +80,7 @@ function PrivacyEn() {
           <h2 className="text-lg font-bold">In short</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Your books, chats and memory stay on your device.</li>
-            <li>{whoEn[0].toUpperCase() + whoEn.slice(1)} has no server: it neither receives nor keeps any of your data.</li>
+            <li>{PUBLISHER ? whoEn : whoEn[0].toUpperCase() + whoEn.slice(1)} has no server: it neither receives nor keeps any of your data.</li>
             <li>The AI works with the key you enter: passages of the book go straight from your device to the provider you chose. Alternatively you can use a small model downloaded to your phone: in that case the text never leaves the device.</li>
             <li>Syncing with Google Drive is optional and only uses a hidden folder of your Drive.</li>
             <li>No ads, no tracking, no usage statistics.</li>
