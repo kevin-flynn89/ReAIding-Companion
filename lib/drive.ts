@@ -1,4 +1,5 @@
 import { GOOGLE_CLIENT_ID } from "./googleConfig";
+import { t } from "@/lib/i18n";
 
 // Accesso a Google Drive SOLO alla cartella nascosta dell'app ("appDataFolder"):
 // i file non compaiono nel tuo Drive e nessun'altra app può leggerli.
@@ -16,7 +17,7 @@ function loadGis(): Promise<void> {
     const s = document.createElement("script");
     s.src = "https://accounts.google.com/gsi/client"; s.async = true;
     s.onload = () => res();
-    s.onerror = () => rej(new Error("Non riesco a raggiungere Google. Controlla la connessione."));
+    s.onerror = () => rej(new Error(t("Non riesco a raggiungere Google. Controlla la connessione.")));
     document.head.appendChild(s);
   });
 }
@@ -35,11 +36,11 @@ export async function getToken(): Promise<string> {
       client_id: GOOGLE_CLIENT_ID,
       scope: SCOPE,
       callback: (r: any) => {
-        if (r?.error || !r?.access_token) return rej(new Error("Accesso a Google non riuscito."));
+        if (r?.error || !r?.access_token) return rej(new Error(t("Accesso a Google non riuscito.")));
         cached = { token: r.access_token, exp: Date.now() + (Number(r.expires_in) || 3600) * 1000 };
         res(cached.token);
       },
-      error_callback: (e: any) => rej(new Error(e?.type === "popup_closed" ? "Accesso annullato." : "Accesso a Google non riuscito.")),
+      error_callback: (e: any) => rej(new Error(e?.type === "popup_closed" ? t("Accesso annullato.") : t("Accesso a Google non riuscito."))),
     });
     client.requestAccessToken();
   });
@@ -55,9 +56,9 @@ export type RemoteFile = { id: string; name: string; modifiedTime: string };
 
 async function call(token: string, url: string, init: RequestInit = {}): Promise<Response> {
   const r = await fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` } });
-  if (r.status === 401) { cached = null; throw new Error("L'accesso a Google è scaduto: riprova."); }
-  if (r.status === 403) throw new Error("Google ha negato l'accesso a Drive. Controlla che l'API Google Drive sia attiva nel progetto e che il tuo account sia tra gli utenti di test.");
-  if (!r.ok) throw new Error(`Google Drive ha risposto con un errore (${r.status}).`);
+  if (r.status === 401) { cached = null; throw new Error(t("L'accesso a Google è scaduto: riprova.")); }
+  if (r.status === 403) throw new Error(t("Google ha negato l'accesso a Drive. Controlla che l'API Google Drive sia attiva nel progetto e che il tuo account sia tra gli utenti di test."));
+  if (!r.ok) throw new Error(t("Google Drive ha risposto con un errore ({n}).", { n: r.status }));
   return r;
 }
 

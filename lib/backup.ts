@@ -2,6 +2,7 @@ import { get, set } from "idb-keyval";
 import { getWork, listBooks, saveWork, setProgress, type Work } from "./library";
 import { loadChat, saveChat, type Msg } from "./chat";
 import { loadMem, saveMem, type MemStore } from "./memory";
+import { t } from "@/lib/i18n";
 
 // Formato file: un unico .json con libri, progressi, conversazioni e memoria narrativa.
 // L'indice "ricerca avanzata" NON è incluso (è pesante e si rigenera da solo).
@@ -36,9 +37,9 @@ export type ImportResult = { added: number; updated: number; skipped: number };
 
 export async function importBackup(file: File): Promise<ImportResult> {
   let data: any;
-  try { data = JSON.parse(await file.text()); } catch { throw new Error("Il file non è leggibile: non sembra un backup."); }
+  try { data = JSON.parse(await file.text()); } catch { throw new Error(t("Il file non è leggibile: non sembra un backup.")); }
   if (data?.head?.app !== "ai-reading-companion" || !Array.isArray(data.books)) {
-    throw new Error("Questo file non è un backup di reAIding companion.");
+    throw new Error(t("Questo file non è un backup di reAIding companion."));
   }
   const existing = await listBooks();
   const res: ImportResult = { added: 0, updated: 0, skipped: 0 };

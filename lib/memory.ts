@@ -3,6 +3,7 @@ import { AiError, chat } from "./llm";
 import { EXTRACT_SYSTEM, cleanExtracted, parseLoose } from "./prompts";
 import type { Work } from "./library";
 import { activeProfile } from "./aiconfig";
+import { t } from "@/lib/i18n";
 
 // Memoria narrativa: una "scheda" per ogni capitolo analizzato, salvata sul dispositivo.
 // SPOILER SHIELD: si analizzano solo capitoli <= capitolo corrente, e quando si mostra la scheda
@@ -30,9 +31,9 @@ export function pieces(text: string): string[] {
 
 async function callExtract(title: string, chapter: number, current: number, text: string) {
   // Spoiler Shield: mai analizzare un capitolo oltre quello a cui è arrivato il lettore
-  if (chapter > current) throw new Error("Capitolo oltre quello corrente.");
-  if (text.length < 50) throw new Error("Brano troppo corto.");
-  if (activeProfile().provider === "local") throw new AiError("model", "La memoria narrativa richiede un'AI esterna (Anthropic, OpenAI, Gemini...): i modelli sul dispositivo sono troppo piccoli per costruirla in modo affidabile. Le domande in chat funzionano comunque, anche usando la memoria già costruita.");
+  if (chapter > current) throw new Error(t("Capitolo oltre quello corrente."));
+  if (text.length < 50) throw new Error(t("Brano troppo corto."));
+  if (activeProfile().provider === "local") throw new AiError("model", t("La memoria narrativa richiede un'AI esterna (Anthropic, OpenAI, Gemini...): i modelli sul dispositivo sono troppo piccoli per costruirla in modo affidabile. Le domande in chat funzionano comunque, anche usando la memoria già costruita."));
   let lastErr = "";
   // Prima il modello economico; se la scheda non è leggibile, quello principale
   for (const cheap of [true, false]) {
@@ -50,7 +51,7 @@ async function callExtract(title: string, chapter: number, current: number, text
       lastErr = String(e?.message || e).slice(0, 200);
     }
   }
-  throw new Error(`L'AI non ha restituito una scheda leggibile. (dettaglio: ${lastErr})`);
+  throw new Error(t("L'AI non ha restituito una scheda leggibile. (dettaglio: {d})", { d: lastErr }));
 }
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, "").trim();
@@ -68,16 +69,16 @@ function mergeEntries(list: Entry[]): Entry[] {
 const uniq = (a: string[]) => [...new Map(a.map((x) => [norm(x), x] as const)).values()];
 
 export async function analyzeChapter(work: Work, n: number, current: number): Promise<ChapterMem> {
-  if (n > current) throw new Error("Capitolo oltre quello corrente."); // barriera Shield lato app
+  if (n > current) throw new Error(t("Capitolo oltre quello corrente.")); // barriera Shield lato app
   const ch = work.chapters.find((c) => c.n === n);
-  if (!ch) throw new Error("Capitolo non trovato.");
+  if (!ch) throw new Error(t("Capitolo non trovato."));
   const parts: Omit<ChapterMem, "n">[] = [];
   for (const p of pieces(ch.text)) {
     let res: Omit<ChapterMem, "n"> | null = null, err: unknown;
     for (let t = 0; t < 2 && !res; t++) {
       try { res = await callExtract(work.title, n, current, p); } catch (e) { err = e; }
     }
-    if (!res) throw err instanceof Error ? err : new Error("Analisi non riuscita.");
+    if (!res) throw err instanceof Error ? err : new Error(t("Analisi non riuscita."));
     parts.push(res);
   }
   return {
@@ -99,7 +100,7 @@ export async function buildMemory(
   let done = 0;
   for (const n of todo) {
     if (shouldStop()) break;
-    onStatus(`Analizzo il capitolo ${n} (${done + 1} di ${todo.length})...`);
+    onStatus(t("Analizzo il capitolo {n} ({i} di {total})...", { n, i: done + 1, total: todo.length }));
     try {
       mem[n] = await analyzeChapter(work, n, current);
       await saveMem(work.id, mem);

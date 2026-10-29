@@ -1,5 +1,6 @@
 import { get, set } from "idb-keyval";
 import type { Chunk, EmbIndex } from "./rag";
+import { t } from "@/lib/i18n";
 
 const MODEL = "Xenova/multilingual-e5-small";
 const DIM = 384;
@@ -42,7 +43,7 @@ export async function buildIndex(
     const nd = new Float32Array(data.length + part.length * DIM);
     nd.set(data); nd.set(out.data as Float32Array, data.length);
     data = nd; ids = ids.concat(part.map((c) => c.id));
-    onStatus(`Analizzo il libro: ${Math.min(i + 8, todo.length)} di ${todo.length}`);
+    onStatus(t("Analizzo il libro: {i} di {total}", { i: Math.min(i + 8, todo.length), total: todo.length }));
     if ((i / 8) % 5 === 4) await persist();
     await new Promise((r) => setTimeout(r, 0));
   }

@@ -1,5 +1,6 @@
 import { activeProfile, addUsage, hasKey, type Provider } from "./aiconfig";
 import { localChat } from "./localllm";
+import { t } from "@/lib/i18n";
 
 // Chiamata diretta dal browser al provider scelto dall'utente, con la sua chiave.
 export type ErrKind = "nokey" | "auth" | "quota" | "model" | "network" | "other";
@@ -33,17 +34,17 @@ function providerMessage(d: any): string {
 function httpError(status: number, d: any): AiError {
   const detail = providerMessage(d);
   const tail = detail ? ` (${detail})` : "";
-  if (status === 401 || status === 403) return new AiError("auth", `Il provider ha rifiutato la chiave: controlla che sia giusta e attiva${tail}`);
-  if (status === 429) return new AiError("quota", `Limite o credito del provider esaurito, riprova più tardi${tail}`);
-  if (status === 404) return new AiError("model", `Modello non trovato: controlla il nome nelle Opzioni (o lascia il campo vuoto per la scelta automatica)${tail}`);
-  return new AiError("other", `Errore del provider (${status})${tail}`);
+  if (status === 401 || status === 403) return new AiError("auth", t("Il provider ha rifiutato la chiave: controlla che sia giusta e attiva") + tail);
+  if (status === 429) return new AiError("quota", t("Limite o credito del provider esaurito, riprova più tardi") + tail);
+  if (status === 404) return new AiError("model", t("Modello non trovato: controlla il nome nelle Opzioni (o lascia il campo vuoto per la scelta automatica)") + tail);
+  return new AiError("other", t("Errore del provider ({n})", { n: status }) + tail);
 }
 async function post(url: string, headers: Record<string, string>, body: unknown): Promise<any> {
   let r: Response;
   try {
     r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
   } catch {
-    throw new AiError("network", "Non riesco a raggiungere il provider: controlla la connessione. Se succede sempre, il provider potrebbe non accettare chiamate dirette dal browser.");
+    throw new AiError("network", t("Non riesco a raggiungere il provider: controlla la connessione. Se succede sempre, il provider potrebbe non accettare chiamate dirette dal browser."));
   }
   const d = await readBody(r);
   if (!r.ok) throw httpError(r.status, d);
@@ -55,7 +56,7 @@ type Active = ReturnType<typeof activeProfile>;
 async function callProvider(a: Active, model: string, o: ChatOpts): Promise<string> {
   const p: Provider = a.provider;
   const msgs = normalize(o.messages);
-  if (!msgs.length) throw new AiError("other", "Nessun messaggio da inviare.");
+  if (!msgs.length) throw new AiError("other", t("Nessun messaggio da inviare."));
   const key = a.apiKey.trim();
   let text = "", inT = 0, outT = 0;
 
@@ -72,7 +73,7 @@ async function callProvider(a: Active, model: string, o: ChatOpts): Promise<stri
       generationConfig: { temperature: o.temperature ?? 0.2, maxOutputTokens: thinking(model) ? o.maxTokens * 4 : o.maxTokens },
     });
     text = (d.candidates?.[0]?.content?.parts || []).map((x: any) => x?.text || "").join("");
-    if (!text && d.promptFeedback?.blockReason) throw new AiError("other", "Il provider ha bloccato la richiesta per i suoi filtri di sicurezza.");
+    if (!text && d.promptFeedback?.blockReason) throw new AiError("other", t("Il provider ha bloccato la richiesta per i suoi filtri di sicurezza."));
     inT = d.usageMetadata?.promptTokenCount; outT = d.usageMetadata?.candidatesTokenCount;
   } else {
     // OpenAI e provider compatibili
@@ -92,20 +93,20 @@ async function callProvider(a: Active, model: string, o: ChatOpts): Promise<stri
   }
   addUsage(Number(inT) || 0, Number(outT) || 0);
   text = text.trim();
-  if (!text) throw new AiError("other", "L'AI ha restituito una risposta vuota. Riprova, o prova un altro modello.");
+  if (!text) throw new AiError("other", t("L'AI ha restituito una risposta vuota. Riprova, o prova un altro modello."));
   return text;
 }
 
 export async function chat(o: ChatOpts): Promise<string> {
   const a = activeProfile();
   if (a.provider === "local") {
-    if (!hasKey()) throw new AiError("nokey", "Prima scarica un modello: apri Opzioni, scegli \"Sul dispositivo\" e premi \"Scarica e prova\".");
+    if (!hasKey()) throw new AiError("nokey", t("Prima scarica un modello: apri Opzioni, scegli \"Sul dispositivo\" e premi \"Scarica e prova\"."));
     return localChat(a.model, o.system, normalize(o.messages), o.maxTokens, o.temperature ?? 0.2);
   }
-  if (a.provider === "custom" ? !a.baseUrl : !a.apiKey.trim()) throw new AiError("nokey", "Prima collega un'AI: apri Opzioni e inserisci la tua chiave.");
+  if (a.provider === "custom" ? !a.baseUrl : !a.apiKey.trim()) throw new AiError("nokey", t("Prima collega un'AI: apri Opzioni e inserisci la tua chiave."));
   const typed = ((o.cheap && a.cheapModel.trim()) || (!o.cheap || a.provider === "custom" ? a.model.trim() : "") || "").trim();
   if (typed) return callProvider(a, typed, o); // nome scritto da te: lo uso così com'è
-  if (a.provider === "custom") throw new AiError("model", "Scrivi il nome del modello nelle Opzioni.");
+  if (a.provider === "custom") throw new AiError("model", t("Scrivi il nome del modello nelle Opzioni."));
   // Automatico: scelgo dall'elenco reale del provider; se il modello è sparito, rileggo l'elenco e riprovo una volta
   for (const force of [false, true]) {
     const picked = await resolveModels(a.provider, a.apiKey, a.baseUrl, force);
@@ -113,7 +114,7 @@ export async function chat(o: ChatOpts): Promise<string> {
     try { return await callProvider(a, model, o); }
     catch (e) { if (!(e instanceof AiError && e.kind === "model") || force) throw e; }
   }
-  throw new AiError("model", "Non sono riuscito a scegliere un modello.");
+  throw new AiError("model", t("Non sono riuscito a scegliere un modello."));
 }
 
 // Elenco dei modelli disponibili con la chiave inserita (aiuta a scrivere il nome giusto)
@@ -124,7 +125,7 @@ export async function listModels(provider: Provider, apiKey: string, baseUrl: st
     if (provider === "anthropic") r = await fetch("https://api.anthropic.com/v1/models?limit=100", { headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" } });
     else if (provider === "gemini") r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100", { headers: { "x-goog-api-key": key } });
     else r = await fetch(`${provider === "openai" ? "https://api.openai.com/v1" : baseUrl.trim().replace(/\/+$/, "")}/models`, { headers: key ? { Authorization: `Bearer ${key}` } : {} });
-  } catch { throw new AiError("network", "Non riesco a raggiungere il provider."); }
+  } catch { throw new AiError("network", t("Non riesco a raggiungere il provider.")); }
   const d = await readBody(r);
   if (!r.ok) throw httpError(r.status, d);
   let ids: string[] = [];
@@ -163,7 +164,7 @@ export function pickModels(provider: Provider, ids: string[]): { main: string; c
   }
   const first = ids[0];
   main = main || first; cheap = cheap || main;
-  if (!main) throw new AiError("model", "Il provider non ha elencato modelli utilizzabili: scrivi il nome nelle Opzioni.");
+  if (!main) throw new AiError("model", t("Il provider non ha elencato modelli utilizzabili: scrivi il nome nelle Opzioni."));
   return { main, cheap: cheap! };
 }
 

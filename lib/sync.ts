@@ -3,6 +3,7 @@ import { deleteFile, getJson, listFiles, putJson, type RemoteFile } from "./driv
 import { getDeleted, getWork, listBooks, removeWork, saveWork, setDeleted, setProgress, type BookMeta, type Work } from "./library";
 import { loadChat, saveChat, type Msg } from "./chat";
 import { loadMem, saveMem, type MemStore } from "./memory";
+import { t } from "@/lib/i18n";
 
 // Sincronizzazione tra dispositivi tramite la cartella nascosta di Google Drive.
 // Per ogni libro: "book_<id>.json" (testo e copertina, scritto una volta) e "state_<id>.json"
@@ -46,7 +47,7 @@ export type SyncResult = { uploaded: number; downloaded: number; updated: number
 
 export async function syncAll(token: string, onStatus: (s: string) => void = () => {}): Promise<SyncResult> {
   const res: SyncResult = { uploaded: 0, downloaded: 0, updated: 0, removedHere: 0, removedOnDrive: 0 };
-  onStatus("Leggo i dati su Drive...");
+  onStatus(t("Leggo i dati su Drive..."));
   const files = await listFiles(token);
   const byName = new Map<string, RemoteFile>(files.map((f) => [f.name, f]));
 
@@ -77,7 +78,7 @@ export async function syncAll(token: string, onStatus: (s: string) => void = () 
   // 2a) Solo su Drive: li scarico
   for (const id of remoteIds) {
     if (localIds.has(id) || deleted[id]) continue;
-    onStatus(`Scarico un libro da Drive (${res.downloaded + 1})...`);
+    onStatus(t("Scarico un libro da Drive ({n})...", { n: res.downloaded + 1 }));
     const work = await getJson<Work>(token, byName.get(`book_${id}.json`)!.id);
     await saveWork(work);
     const sf = byName.get(`state_${id}.json`);
@@ -91,7 +92,7 @@ export async function syncAll(token: string, onStatus: (s: string) => void = () 
     const sf = byName.get(`state_${b.id}.json`);
     const mine = await localState(b);
     if (!bf) {
-      onStatus(`Carico "${b.title.slice(0, 30)}" su Drive...`);
+      onStatus(t("Carico \"{title}\" su Drive...", { title: b.title.slice(0, 30) }));
       const w = await getWork(b.id); // il testo si legge solo ora, un libro alla volta
       if (!w) continue;
       await putJson(token, `book_${b.id}.json`, w);

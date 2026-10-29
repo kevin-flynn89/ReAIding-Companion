@@ -2,6 +2,7 @@
 // Nessuna chiave, nessun costo, il testo del libro non esce dal telefono. Più lenta e meno precisa delle AI esterne.
 // Il modello viene scaricato da huggingface.co e un file di runtime da raw.githubusercontent.com (mlc-ai); poi resta nella cache del browser.
 import type { MLCEngine } from "@mlc-ai/web-llm";
+import { t } from "@/lib/i18n";
 
 export type LocalModel = {
   id: string; label: string; level: "Base" | "Medio" | "Medio-alto" | "Top";
@@ -79,9 +80,9 @@ export async function isDownloaded(base: string): Promise<boolean> {
 // Scarica (se serve) e carica il modello in memoria. onProgress: 0..1 e testo.
 export async function loadModel(base: string, onProgress?: (p: number, text: string) => void): Promise<MLCEngine> {
   const sup = await localSupport();
-  if (!sup.webgpu) throw new Error("Questo browser non supporta WebGPU, quindi non può far girare l'AI sul dispositivo. Prova con Chrome aggiornato, oppure usa una chiave AI.");
+  if (!sup.webgpu) throw new Error(t("Questo browser non supporta WebGPU, quindi non può far girare l'AI sul dispositivo. Prova con Chrome aggiornato, oppure usa una chiave AI."));
   const def = LOCAL_MODELS.find((m) => m.id === base);
-  if (def && !sup.f16 && !def.f32) throw new Error(`Questo telefono non supporta il modello ${def.label} (la sua scheda grafica non ha le funzioni necessarie). Prova un altro modello.`);
+  if (def && !sup.f16 && !def.f32) throw new Error(t("Questo telefono non supporta il modello {name} (la sua scheda grafica non ha le funzioni necessarie). Prova un altro modello.", { name: def.label }));
   const id = fullId(base, sup.f16);
   if (engine && engineKey === id) return engine;
   try { await navigator.storage?.persist?.(); } catch { /* ignora */ }
@@ -96,7 +97,7 @@ export async function loadModel(base: string, onProgress?: (p: number, text: str
     return engine;
   } catch (e: any) {
     engine = null; engineKey = "";
-    throw new Error(`Non sono riuscito a caricare il modello (${String(e?.message || e).slice(0, 160)}). Se il telefono ha poca memoria, prova un modello più piccolo.`);
+    throw new Error(t("Non sono riuscito a caricare il modello ({detail}). Se il telefono ha poca memoria, prova un modello più piccolo.", { detail: String(e?.message || e).slice(0, 160) }));
   }
 }
 
@@ -126,7 +127,7 @@ export function localChat(base: string, system: string, messages: LocalMsg[], ma
       max_tokens: Math.min(maxTokens, 400), temperature, stream: false,
     });
     const text = stripThink(r.choices?.[0]?.message?.content || "");
-    if (!text) throw new Error("Il modello sul dispositivo ha restituito una risposta vuota. Riprova.");
+    if (!text) throw new Error(t("Il modello sul dispositivo ha restituito una risposta vuota. Riprova."));
     return text;
   };
   const p = queue.then(run, run);
@@ -137,7 +138,7 @@ export function localChat(base: string, system: string, messages: LocalMsg[], ma
 // Scarica, carica e prova il modello; solo se la prova riesce lo segna come pronto
 export async function downloadAndTest(base: string, onProgress: (p: number, text: string) => void): Promise<string> {
   await loadModel(base, onProgress);
-  const r = await localChat(base, "Rispondi in italiano con una sola parola.", [{ role: "user", content: "Scrivi: pronto" }], 20, 0.2);
+  const r = await localChat(base, "Reply with a single word.", [{ role: "user", content: "Write: ready" }], 20, 0.2);
   setReady(base);
   return r;
 }
