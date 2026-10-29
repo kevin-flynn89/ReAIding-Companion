@@ -5,6 +5,7 @@ import { getWork, setLastOpened, setProgress, type Work } from "@/lib/library";
 import { chunkWork } from "@/lib/rag";
 import Conversazione from "../conversazione";
 import { Empty, Icon, TopBar } from "../ui";
+import { t } from "@/lib/i18n";
 
 export default function Lettore() {
   const [work, setWork] = useState<Work | null>(null);
@@ -28,7 +29,7 @@ export default function Lettore() {
 
   function go(next: number) {
     if (!work || next < 1 || next > work.chapters.length) return;
-    if (next > maxRead + 1 && !window.confirm(`Stai saltando avanti al capitolo ${next}.\n\nLo Spoiler Shield considererà letti tutti i capitoli fino al ${next}: l'AI potrà rivelarti ciò che succede fino a lì.\n\nVuoi continuare?`)) return;
+    if (next > maxRead + 1 && !window.confirm(t("Stai saltando avanti al capitolo {next}.\n\nLo Spoiler Shield considererà letti tutti i capitoli fino al {next}: l'AI potrà rivelarti ciò che succede fino a lì.\n\nVuoi continuare?", { next }))) return;
     setN(next); setProgress(work.id, next);
     setMaxRead(Math.max(maxRead, next));
     window.scrollTo(0, 0);
@@ -38,29 +39,29 @@ export default function Lettore() {
     try { localStorage.setItem("rc_font", String(s)); } catch { /* ignora */ }
   }
 
-  if (state === "loading") return <main><TopBar title="Lettore" back="/libreria" backLabel="Libreria" /><p className="mt-4 text-sm text-on-surface-variant">Caricamento...</p></main>;
+  if (state === "loading") return <main><TopBar title={t("Lettore")} back="/libreria" backLabel={t("Libreria")} /><p className="mt-4 text-sm text-on-surface-variant">{t("Caricamento...")}</p></main>;
   if (state === "missing" || !work || !chapter) return (
     <main>
-      <TopBar title="Lettore" back="/libreria" backLabel="Libreria" />
-      <Empty icon="book" title="Libro non trovato"><p>Aprilo dalla libreria.</p><Link href="/libreria" className="btn btn-filled mt-6">Vai alla libreria</Link></Empty>
+      <TopBar title={t("Lettore")} back="/libreria" backLabel={t("Libreria")} />
+      <Empty icon="book" title={t("Libro non trovato")}><p>{t("Aprilo dalla libreria.")}</p><Link href="/libreria" className="btn btn-filled mt-6">{t("Vai alla libreria")}</Link></Empty>
     </main>
   );
 
   const total = work.chapters.length;
   return (
     <main className={open ? "pb-[28rem]" : "pb-40"}>
-      <TopBar title={work.title} sub={`Capitolo ${n} di ${total}`} back="/libreria" backLabel="Libreria"
+      <TopBar title={work.title} sub={t("Capitolo {n} di {total}", { n, total })} back="/libreria" backLabel={t("Libreria")}
         actions={<>
-          <button onClick={() => resize(-2)} disabled={size <= 14} aria-label="Testo più piccolo" className="icon-btn text-sm font-semibold">A−</button>
-          <button onClick={() => resize(2)} disabled={size >= 30} aria-label="Testo più grande" className="icon-btn text-lg font-semibold">A+</button>
-          <Link href={`/memoria?id=${work.id}`} aria-label="Memoria narrativa" className="icon-btn"><Icon name="bulb" /></Link>
+          <button onClick={() => resize(-2)} disabled={size <= 14} aria-label={t("Testo più piccolo")} className="icon-btn text-sm font-semibold">A−</button>
+          <button onClick={() => resize(2)} disabled={size >= 30} aria-label={t("Testo più grande")} className="icon-btn text-lg font-semibold">A+</button>
+          <Link href={`/memoria?id=${work.id}`} aria-label={t("Memoria narrativa")} className="icon-btn"><Icon name="bulb" /></Link>
         </>} />
-      <div className="progress -mx-4 rounded-none md:-mx-8" role="progressbar" aria-label="Avanzamento nel libro" aria-valuenow={n} aria-valuemin={1} aria-valuemax={total}><span style={{ width: `${(n / total) * 100}%` }} /></div>
+      <div className="progress -mx-4 rounded-none md:-mx-8" role="progressbar" aria-label={t("Avanzamento nel libro")} aria-valuenow={n} aria-valuemin={1} aria-valuemax={total}><span style={{ width: `${(n / total) * 100}%` }} /></div>
 
       {n < maxRead && (
         <div className="banner mx-auto mt-4 flex max-w-[68ch] items-center justify-between gap-3 text-sm">
-          <span className="flex items-center gap-2"><Icon name="shield" className="h-4 w-4 shrink-0" />Stai rileggendo: l'AI conosce il libro fino al capitolo {maxRead}.</span>
-          <button onClick={() => go(maxRead)} className="btn btn-text btn-sm shrink-0">Vai al {maxRead}</button>
+          <span className="flex items-center gap-2"><Icon name="shield" className="h-4 w-4 shrink-0" />{t("Stai rileggendo: l'AI conosce il libro fino al capitolo {n}.", { n: maxRead })}</span>
+          <button onClick={() => go(maxRead)} className="btn btn-text btn-sm shrink-0">{t("Vai al {n}", { n: maxRead })}</button>
         </div>
       )}
       <article className="mx-auto mt-8 max-w-[68ch]">
@@ -69,30 +70,30 @@ export default function Lettore() {
           {chapter.text.split(/\n+/).map((p, i) => <p key={i} className="mb-[1.1em]">{p}</p>)}
         </div>
         <div className="mt-10 flex flex-wrap justify-between gap-3">
-          <button onClick={() => go(n - 1)} disabled={n <= 1} className="btn btn-outlined"><Icon name="prev" className="h-5 w-5" />Precedente</button>
-          <button onClick={() => go(n + 1)} disabled={n >= total} className="btn btn-filled">Capitolo successivo<Icon name="next" className="h-5 w-5" /></button>
+          <button onClick={() => go(n - 1)} disabled={n <= 1} className="btn btn-outlined"><Icon name="prev" className="h-5 w-5" />{t("Precedente")}</button>
+          <button onClick={() => go(n + 1)} disabled={n >= total} className="btn btn-filled">{t("Capitolo successivo")}<Icon name="next" className="h-5 w-5" /></button>
         </div>
       </article>
 
       <div className="fixed inset-x-0 bottom-0 z-40">
         {open && (
-          <section aria-label="Chiedi all'AI" className="mx-3 mb-2 max-w-3xl rounded-[32px] bg-surface-container px-4 pb-3 pt-3 shadow-[0_6px_28px_rgb(0_0_0/0.25)] md:mx-auto md:px-6">
+          <section aria-label={t("Chiedi all'AI")} className="mx-3 mb-2 max-w-3xl rounded-[32px] bg-surface-container px-4 pb-3 pt-3 shadow-[0_6px_28px_rgb(0_0_0/0.25)] md:mx-auto md:px-6">
             <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-outline-variant" aria-hidden />
             <div className="flex items-center justify-between">
-              <h3 className="font-sans text-lg font-bold">Chiedi all'AI</h3>
-              <button onClick={() => setOpen(false)} aria-label="Chiudi" className="icon-btn"><Icon name="close" /></button>
+              <h3 className="font-sans text-lg font-bold">{t("Chiedi all'AI")}</h3>
+              <button onClick={() => setOpen(false)} aria-label={t("Chiudi")} className="icon-btn"><Icon name="close" /></button>
             </div>
             <Conversazione work={work} current={maxRead} chunks={chunks} maxHeight="34dvh" />
           </section>
         )}
         <div className="px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="float-bar mx-auto flex max-w-3xl items-center gap-1 px-2 py-2">
-            <button onClick={() => go(n - 1)} disabled={n <= 1} aria-label="Capitolo precedente" className="icon-btn"><Icon name="prev" /></button>
-            <select value={n} onChange={(e) => go(Number(e.target.value))} aria-label="Vai al capitolo" className="select min-w-0 flex-1 rounded-full border-transparent bg-surface-lowest/60 text-sm font-medium">
+            <button onClick={() => go(n - 1)} disabled={n <= 1} aria-label={t("Capitolo precedente")} className="icon-btn"><Icon name="prev" /></button>
+            <select value={n} onChange={(e) => go(Number(e.target.value))} aria-label={t("Vai al capitolo")} className="select min-w-0 flex-1 rounded-full border-transparent bg-surface-lowest/60 text-sm font-medium">
               {work.chapters.map((c) => <option key={c.n} value={c.n}>{c.n}. {c.title.slice(0, 32)}</option>)}
             </select>
-            <button onClick={() => go(n + 1)} disabled={n >= total} aria-label="Capitolo successivo" className="icon-btn"><Icon name="next" /></button>
-            <button onClick={() => setOpen(!open)} aria-expanded={open} className="btn btn-filled ml-1 min-h-[52px] px-5"><Icon name="chat" className="h-5 w-5" /><span className="hidden sm:inline">{open ? "Chiudi" : "Chiedi all'AI"}</span></button>
+            <button onClick={() => go(n + 1)} disabled={n >= total} aria-label={t("Capitolo successivo")} className="icon-btn"><Icon name="next" /></button>
+            <button onClick={() => setOpen(!open)} aria-expanded={open} className="btn btn-filled ml-1 min-h-[52px] px-5"><Icon name="chat" className="h-5 w-5" /><span className="hidden sm:inline">{open ? t("Chiudi") : t("Chiedi all'AI")}</span></button>
           </div>
         </div>
       </div>
