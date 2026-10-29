@@ -4,14 +4,14 @@ export type Note = { chapter: number; text: string };
 export type HistoryItem = { role: "user" | "assistant"; content: string; chapter: number };
 
 export const ASK_SYSTEM = (title: string, chapter: number) =>
-  `Sei un compagno di lettura. Il lettore sta leggendo "${title}" ed è arrivato al capitolo ${chapter}.
-REGOLE:
-1. Rispondi usando SOLO i passaggi (ed eventuali appunti) forniti dall'utente. Non usare nessuna conoscenza esterna sul libro, anche se lo conosci: potrebbe contenere eventi di capitoli che il lettore non ha ancora letto.
-2. Non anticipare né suggerire cosa succederà dopo.
-3. Se i passaggi non bastano per rispondere, dillo chiaramente: "Fino al punto in cui sei arrivato questo non è ancora stato spiegato", e riporta solo quello che i passaggi dicono davvero.
-4. Rispondi in italiano, in modo chiaro e discorsivo, in poche frasi. Più i passaggi contengono dettagli, più la risposta può essere dettagliata.
-5. Può esserci una conversazione precedente: serve a capire a cosa si riferisce la domanda (per esempio "lui", "e dopo?"). Per i fatti usa i passaggi forniti e quanto già detto nella conversazione.
-6. Possono esserci APPUNTI DELLA SCHEDA: sintesi di capitoli già letti create da un'AI. Usali per completare la risposta, ma se contraddicono i passaggi, valgono i passaggi.`;
+  `You are a reading companion. The reader is reading "${title}" and has reached chapter ${chapter}.
+RULES:
+1. Answer using ONLY the PASSAGES (and any NOTES) provided by the user. Do not use any outside knowledge about the book, even if you know it: it may contain events from chapters the reader has not read yet.
+2. Never hint at or anticipate what happens later.
+3. If the passages are not enough to answer, say so clearly, in the language of the question. For example in Italian: "Fino al punto in cui sei arrivato questo non è ancora stato spiegato"; in English: "Up to where you have read, this has not been explained yet". Then report only what the passages really say.
+4. LANGUAGE: always answer in the same language as the reader's QUESTION, even if the book or the passages are in another language. Be clear and conversational, in a few sentences. The more detail the passages contain, the more detailed the answer can be.
+5. There may be a previous conversation: it helps you understand what the question refers to (for example "he", "and then?"). For facts, use the passages provided and what was already said in the conversation.
+6. There may be NOTES FROM THE BOOK SHEET: summaries of chapters already read, created by an AI. Use them to complete the answer, but if they contradict the passages, the passages win.`;
 
 // "lim": limiti più stretti per i modelli sul dispositivo (contesto di soli 4096 token)
 export type AskLimits = { pass: number; chars: number; total: number; notes: number; hist: number };
@@ -26,24 +26,24 @@ export function buildAsk(title: string, current: number, question: string, passa
   const q = question.slice(0, 500).trim();
   const pass = passages.slice(0, lim.pass);
   const nts = notes.slice(0, lim.notes);
-  const noteText = nts.length ? "APPUNTI DELLA SCHEDA:\n" + nts.map((n) => `- (cap. ${n.chapter}) ${n.text.slice(0, 300)}`).join("\n") + "\n\n" : "";
+  const noteText = nts.length ? "NOTES FROM THE BOOK SHEET:\n" + nts.map((n) => `- (ch. ${n.chapter}) ${n.text.slice(0, 300)}`).join("\n") + "\n\n" : "";
   let used = 0;
   const context = pass.map((p, i) => {
     const t = p.text.slice(0, lim.chars); used += t.length;
-    return used > lim.total ? "" : `[Passaggio ${i + 1} - capitolo ${p.chapter}]\n${t}`;
+    return used > lim.total ? "" : `[Passage ${i + 1} - chapter ${p.chapter}]\n${t}`;
   }).filter(Boolean).join("\n\n");
   return {
     system: ASK_SYSTEM(title.slice(0, 120), current),
     messages: [
       ...history.slice(-lim.hist).map((m) => ({ role: m.role, content: m.content.slice(0, 600) })),
-      { role: "user" as const, content: `${noteText}PASSAGGI:\n${context || "(nessuno)"}\n\nDOMANDA: ${q}` },
+      { role: "user" as const, content: `${noteText}PASSAGES:\n${context || "(none)"}\n\nQUESTION: ${q}` },
     ],
   };
 }
 
 // --- Memoria narrativa ---
 export const EXTRACT_SYSTEM = (title: string) =>
-  `Sei un assistente che prepara la scheda di un libro. Leggi il brano di "${title}" e rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, in italiano, con questa forma:
+  `Sei un assistente che prepara la scheda di un libro. Leggi il brano di "${title}" e rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, con questa forma (le chiavi JSON restano ESATTAMENTE in italiano; i testi dentro scrivili nella stessa lingua del brano):
 {"personaggi":[{"nome":"","descrizione":""}],"luoghi":[{"nome":"","descrizione":""}],"oggetti":[{"nome":"","descrizione":""}],"eventi":[""],"misteri":[""]}
 REGOLE:
 1. Usa SOLO ciò che è scritto nel brano. Nessuna conoscenza esterna sul libro.
