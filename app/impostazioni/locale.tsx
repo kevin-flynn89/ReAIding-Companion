@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "../ui";
 import { LOCAL_MODELS, cleanLegacy, downloadAndTest, isDownloaded, localReadyFor, localSupport, recommendedModel, removeModel, type Support } from "@/lib/localllm";
+import { t } from "@/lib/i18n";
 
 // Sezione "AI sul dispositivo": scelta del modello, download con avanzamento, prova ed eliminazione.
 export default function Locale({ model, onModel }: { model: string; onModel: (id: string) => void }) {
@@ -35,46 +36,46 @@ export default function Locale({ model, onModel }: { model: string; onModel: (id
 
   async function scarica() {
     const rilascia = await tieniAcceso();
-    setBusy(true); setMsg(null); setProg({ p: 0, text: "Preparo il download..." });
+    setBusy(true); setMsg(null); setProg({ p: 0, text: t("Preparo il download...") });
     onModel(chosen);
     try {
       const r = await downloadAndTest(chosen, (p, text) => setProg({ p, text }));
-      setMsg({ ok: true, text: `Funziona! Il modello ha risposto: "${r.slice(0, 60)}". Ora puoi fare domande dal lettore e dalla chat.` });
-    } catch (e: any) { setMsg({ ok: false, text: e?.message || "Errore sconosciuto." }); }
+      setMsg({ ok: true, text: t("Funziona! Il modello ha risposto: \"{r}\". Ora puoi fare domande dal lettore e dalla chat.", { r: r.slice(0, 60) }) });
+    } catch (e: any) { setMsg({ ok: false, text: e?.message || t("Errore sconosciuto.") }); }
     rilascia(); setProg(null); setBusy(false); refresh();
   }
   async function elimina() {
-    if (!window.confirm("Eliminare il modello scaricato da questo dispositivo? Libererai spazio, ma per usarlo dovrai riscaricarlo.")) return;
+    if (!window.confirm(t("Eliminare il modello scaricato da questo dispositivo? Libererai spazio, ma per usarlo dovrai riscaricarlo."))) return;
     setBusy(true); await removeModel(chosen); await refresh(); setBusy(false);
-    setMsg({ ok: true, text: "Modello eliminato da questo dispositivo." });
+    setMsg({ ok: true, text: t("Modello eliminato da questo dispositivo.") });
   }
 
   return (
     <section className="card mt-4 space-y-4">
-      <h2 className="text-lg font-bold">2. Scegli il modello sul dispositivo</h2>
-      <p className="text-sm text-on-surface-variant">Il modello si scarica una volta (meglio con il Wi‑Fi, tenendo l'app aperta: lo schermo resta acceso durante il download) e poi funziona senza chiave e senza costi. I testi dei libri non lasciano il telefono. Risponde più lentamente e con meno precisione delle AI esterne: è un'opzione "base".</p>
+      <h2 className="text-lg font-bold">{t("2. Scegli il modello sul dispositivo")}</h2>
+      <p className="text-sm text-on-surface-variant">{t("Il modello si scarica una volta (meglio con il Wi‑Fi, tenendo l'app aperta: lo schermo resta acceso durante il download) e poi funziona senza chiave e senza costi. I testi dei libri non lasciano il telefono. Risponde più lentamente e con meno precisione delle AI esterne: è un'opzione \"base\".")}</p>
 
-      {sup && !sup.webgpu && <p role="status" className="banner-error">Questo browser non supporta WebGPU, necessario per l'AI sul dispositivo. Prova con Chrome aggiornato (versione 121 o successiva su Android) oppure usa una chiave AI.</p>}
+      {sup && !sup.webgpu && <p role="status" className="banner-error">{t("Questo browser non supporta WebGPU, necessario per l'AI sul dispositivo. Prova con Chrome aggiornato (versione 121 o successiva su Android) oppure usa una chiave AI.")}</p>}
       {sup && sup.webgpu && (
         <p className="text-xs text-on-surface-variant">
-          {sup.memGB !== null ? `Memoria rilevata: circa ${sup.memGB} GB (il browser la arrotonda). ` : "Il browser non comunica la memoria del telefono: ti suggerisco il modello più leggero. "}
-          {sup.f16 ? "" : "Questa scheda grafica usa la versione più pesante del modello. "}
+          {sup.memGB !== null ? t("Memoria rilevata: circa {n} GB (il browser la arrotonda).", { n: sup.memGB }) + " " : t("Il browser non comunica la memoria del telefono: ti suggerisco il modello più leggero.") + " "}
+          {sup.f16 ? "" : t("Questa scheda grafica usa la versione più pesante del modello.") + " "}
         </p>
       )}
 
-      <div className="space-y-2" role="radiogroup" aria-label="Modello sul dispositivo">
+      <div className="space-y-2" role="radiogroup" aria-label={t("Modello sul dispositivo")}>
         {LOCAL_MODELS.map((m) => (
           <button key={m.id} role="radio" aria-checked={chosen === m.id} disabled={busy} onClick={() => { onModel(m.id); setMsg(null); }}
             className={`w-full rounded-3xl border-2 p-4 text-left transition ${chosen === m.id ? "border-primary bg-primary-container/40" : "border-outline-variant hover:bg-on-surface/5"}`}>
             <span className="flex flex-wrap items-center gap-2">
               <span className="font-bold">{m.label}</span>
-              <span className="rounded-full border border-outline-variant px-2 py-0.5 text-[11px] font-bold">Livello: {m.level}</span>
-              {m.id === rec && <span className="rounded-full bg-primary-container px-2 py-0.5 text-[11px] font-bold text-on-primary-container">consigliato per il tuo telefono</span>}
-              {have[m.id] && <span className="rounded-full bg-secondary-container px-2 py-0.5 text-[11px] font-bold text-on-secondary-container">scaricato</span>}
+              <span className="rounded-full border border-outline-variant px-2 py-0.5 text-[11px] font-bold">{t("Livello: {l}", { l: t(m.level) })}</span>
+              {m.id === rec && <span className="rounded-full bg-primary-container px-2 py-0.5 text-[11px] font-bold text-on-primary-container">{t("consigliato per il tuo telefono")}</span>}
+              {have[m.id] && <span className="rounded-full bg-secondary-container px-2 py-0.5 text-[11px] font-bold text-on-secondary-container">{t("scaricato")}</span>}
             </span>
-            <span className="mt-1 block text-sm text-on-surface-variant">Download {m.download} · memoria della scheda grafica {m.gpu}</span>
-            <span className="mt-1 block text-xs text-on-surface-variant">Lingue: {m.langs}</span>
-            <span className="mt-1 block text-xs text-on-surface-variant">{m.note}</span>
+            <span className="mt-1 block text-sm text-on-surface-variant">{t("Download {d} · memoria della scheda grafica {g}", { d: t(m.download), g: t(m.gpu) })}</span>
+            <span className="mt-1 block text-xs text-on-surface-variant">{t("Lingue: {l}", { l: t(m.langs) })}</span>
+            <span className="mt-1 block text-xs text-on-surface-variant">{t(m.note)}</span>
           </button>
         ))}
       </div>
@@ -88,13 +89,13 @@ export default function Locale({ model, onModel }: { model: string; onModel: (id
 
       <div className="grid gap-2 sm:grid-cols-2">
         <button onClick={scarica} disabled={busy || (sup !== null && !sup.webgpu)} className="btn btn-filled">
-          <Icon name="download" className="h-5 w-5" />{busy ? "Attendi..." : have[chosen] ? "Prova il modello" : "Scarica e prova"}
+          <Icon name="download" className="h-5 w-5" />{busy ? t("Attendi...") : have[chosen] ? t("Prova il modello") : t("Scarica e prova")}
         </button>
-        <button onClick={elimina} disabled={busy || !have[chosen]} className="btn btn-outlined"><Icon name="trash" className="h-5 w-5" />Elimina dal dispositivo</button>
+        <button onClick={elimina} disabled={busy || !have[chosen]} className="btn btn-outlined"><Icon name="trash" className="h-5 w-5" />{t("Elimina dal dispositivo")}</button>
       </div>
-      {ready && !msg && <p className="banner">Modello pronto: {LOCAL_MODELS.find((m) => m.id === model)?.label}.</p>}
+      {ready && !msg && <p className="banner">{t("Modello pronto: {name}.", { name: LOCAL_MODELS.find((m) => m.id === model)?.label ?? "" })}</p>}
       {msg && <p role="status" className={msg.ok ? "banner" : "banner-error"}>{msg.text}</p>}
-      <p className="text-xs text-on-surface-variant">Limiti: la memoria narrativa richiede un'AI esterna (i modelli piccoli non la costruiscono in modo affidabile); durante le risposte il telefono può scaldarsi e consumare batteria. Il modello viene scaricato da huggingface.co e salvato nella memoria del browser.</p>
+      <p className="text-xs text-on-surface-variant">{t("Limiti: la memoria narrativa richiede un'AI esterna (i modelli piccoli non la costruiscono in modo affidabile); durante le risposte il telefono può scaldarsi e consumare batteria. Il modello viene scaricato da huggingface.co e salvato nella memoria del browser.")}</p>
     </section>
   );
 }
